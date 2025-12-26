@@ -1,0 +1,101 @@
+@use "sass:color";
+@use "variables" as *;
+@use "mixins" as *;
+
+// Instructors Section
+.instructors-section {
+  padding: 3rem 0;
+  background: $white;
+}
+
+.instructors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+// Instructor Card
+.instructor-card {
+  background: $white;
+  @include border-radius(16px);
+  @include shadow(box, 0 4px 12px rgba(0, 0, 0, 0.1));
+  overflow: hidden;
+  @include transition(transform 0.3s ease, box-shadow 0.3s ease);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(16, 68, 81, 0.1);
+
+  &:hover {
+    @include transform(translateY(-8px));
+    @include shadow(box, 0 8px 24px rgba(16, 68, 81, 0.2));
+  }
+
+  .instructor-image {
+    width: 100%;
+    height: 250px;
+    overflow: hidden;
+    position: relative;
+    background: $color1-op-10;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      @include transition(transform 0.3s ease);
+    }
+  }
+
+  &:hover .instructor-image img {
+    @include transform(scale(1.05));
+  }
+
+  .instructor-content {
+    padding: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+
+    h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: $color2;
+      text-align: center;
+    }
+
+    .instructor-title {
+      margin: 0 0 0.75rem 0;
+      font-size: 0.95rem;
+      color: $color1;
+      font-weight: 600;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .instructor-bio {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #666;
+      line-height: 1.6;
+      text-align: center;
+      flex: 1;
+    }
+  }
+
+  @include responsive($breakpoint-md) {
+    .instructor-image {
+      height: 220px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .instructors-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+}
+

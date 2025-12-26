@@ -1,0 +1,227 @@
+@use "sass:color";
+@use "variables" as *;
+@use "mixins" as *;
+
+// Login Page Styles
+.login-page {
+  min-height: 100vh;
+  background: $color1-op-10;
+  padding: $spacing-lg;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 600px;
+  margin: $spacing-xl auto 0;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: $spacing-lg;
+
+  h1 {
+    color: $color2;
+    font-size: 2.5rem;
+    margin-bottom: $spacing-xs;
+  }
+
+  .subtitle {
+    color: rgba($color2, 0.7);
+    font-size: 1rem;
+  }
+}
+
+.login-card {
+  background: $white;
+  @include border-radius(8px);
+  @include shadow(box, 0 2px 10px rgba(0, 0, 0, 0.1));
+  border-top: 7px solid $color2;
+  padding: 2rem;
+  width: 100%;
+
+  .tabs {
+    @include flex($gap: 0);
+    margin-bottom: $spacing-lg;
+    border-bottom: 2px solid $border-color;
+
+    .tab {
+      flex: 1;
+      padding: $spacing-sm $spacing-md;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: rgba($color2, 0.7);
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      @include transition(all 0.3s);
+
+      &.active {
+        color: $color2;
+        border-bottom-color: $color2;
+        font-weight: 600;
+      }
+
+      &:hover {
+        color: $color2;
+      }
+    }
+  }
+
+  .form-container {
+    .form-group {
+      margin-bottom: $spacing-md;
+
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: $spacing-xs;
+        color: $color2;
+        font-size: 0.95rem;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid $border-color;
+        @include border-radius(8px);
+        font-size: 1rem;
+        font-family: inherit;
+        @include transition(all 0.3s);
+
+        &:focus {
+          outline: none;
+          border-color: $color2;
+          box-shadow: 0 0 0 3px rgba($color2, 0.1);
+        }
+      }
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 0.875rem;
+      background: $color2;
+      color: $white;
+      border: none;
+      @include border-radius(8px);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      @include transition(all 0.3s);
+      margin-top: $spacing-md;
+
+      &:hover {
+        background: color.scale($color2, $lightness: -10%);
+        @include transform(translateY(-2px));
+        @include shadow(box, 0 4px 12px rgba(0, 0, 0, 0.15));
+      }
+    }
+
+    .action-buttons {
+      @include flex($gap: 0.5rem, $jc: center);
+      margin-top: $spacing-md;
+      flex-wrap: wrap;
+
+      .btn-secondary {
+        padding: 0.5rem 1rem;
+        background: transparent;
+        border: 1px solid $border-color;
+        @include border-radius(6px);
+        color: $color2;
+        font-size: 0.875rem;
+        cursor: pointer;
+        @include transition(all 0.3s);
+
+        &:hover {
+          background: $color1-op-10;
+          border-color: $color2;
+        }
+      }
+    }
+
+    .message {
+      margin-top: $spacing-md;
+      padding: $spacing-sm;
+      @include border-radius(6px);
+      text-align: center;
+      font-size: 0.9rem;
+
+      &.success {
+        background: color.scale($success-color, $lightness: 45%);
+        color: color.scale($success-color, $lightness: -10%);
+      }
+
+      &.error {
+        background: color.scale($error-color, $lightness: 45%);
+        color: color.scale($error-color, $lightness: -10%);
+      }
+    }
+  }
+
+  .form-row {
+    @include flex($gap: $spacing-md);
+    margin-bottom: $spacing-md;
+
+    .form-group {
+      flex: 1;
+    }
+  }
+
+  .role-specific-fields {
+    margin-top: $spacing-lg;
+    padding-top: $spacing-lg;
+    border-top: 1px solid $border-color;
+  }
+
+  h3 {
+    color: $color2;
+    margin-bottom: $spacing-md;
+    font-size: 1.2rem;
+  }
+
+  .checkbox-label {
+    @include flex($ai: center, $gap: 0.5rem);
+    cursor: pointer;
+    font-weight: normal;
+
+    input[type="checkbox"] {
+      width: auto;
+      cursor: pointer;
+    }
+  }
+}
+
+// Login Form (like Next.js project) - Legacy support
+.login-form {
+  width: 95%;
+  margin: auto;
+
+  @media (min-width: 992px) {
+    width: 60%;
+  }
+
+  @media (min-width: 1200px) {
+    width: 70%;
+  }
+
+  .card {
+    border: none;
+    border-top: 7px solid $color2;
+    padding: 0px 30px 30px 30px;
+    @include shadow(box, 0 10px 20px -10px $color2-op-50);
+
+    h4 {
+      font-style: italic;
+      font-size: 1.2rem;
+      margin: 30px 0px;
+      color: $color2;
+    }
+
+    button {
+      width: 100%;
+      @include button-primary;
+    }
+  }
+}
+

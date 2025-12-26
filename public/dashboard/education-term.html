@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Education Term Management - Dashboard</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header id="main-header">
+      <div class="container">
+        <div class="logo">
+          <a href="/home.html">
+            <img src="/img/logos/logo-dark.png" alt="EasyGoing Education" style="height: 40px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <span style="display: none;">EasyGoing Education</span>
+          </a>
+        </div>
+        <nav class="nav-menu">
+          <a href="/home.html">Home</a>
+          <a href="/dashboard.html" class="nav-dashboard">Dashboard</a>
+          <a href="#" class="nav-logout" style="display: none">Logout</a>
+          <a href="/index.html#register" class="nav-register" style="display: none">Register</a>
+          <a href="/index.html" class="nav-login">Login</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Education Term Management</h1>
+        <a href="/dashboard.html" class="btn-secondary">Back to Dashboard</a>
+      </div>
+
+      <div class="dashboard-content">
+        <div class="dashboard-actions">
+          <button id="addTermBtn" class="btn-primary">Add New Education Term</button>
+        </div>
+
+        <div id="termTableContainer">
+          <table id="termTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Term Name</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Last Registration Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="termTableBody">
+              <!-- Education Terms will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="termMessage" class="message"></div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Education Term Modal -->
+    <div id="termModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modalTitle">Add Education Term</h2>
+        <form id="termForm">
+          <input type="hidden" id="termId" />
+          <div class="form-group">
+            <label for="termName">Term Name *</label>
+            <input type="text" id="termName" required />
+          </div>
+          <div class="form-group">
+            <label for="termStartDate">Start Date *</label>
+            <input type="date" id="termStartDate" required />
+          </div>
+          <div class="form-group">
+            <label for="termEndDate">End Date *</label>
+            <input type="date" id="termEndDate" required />
+          </div>
+          <div class="form-group">
+            <label for="termLastRegistrationDate">Last Registration Date</label>
+            <input type="date" id="termLastRegistrationDate" />
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/header.js"></script>
+    <script src="../js/education-term.js"></script>
+  </body>
+</html>
+

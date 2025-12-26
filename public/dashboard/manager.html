@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manager Management - Dashboard</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header id="main-header">
+      <div class="container">
+        <div class="logo">
+          <a href="/home.html">
+            <img src="/img/logos/logo-dark.png" alt="EasyGoing Education" style="height: 40px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <span style="display: none;">EasyGoing Education</span>
+          </a>
+        </div>
+        <nav class="nav-menu">
+          <a href="/home.html">Home</a>
+          <a href="/dashboard.html" class="nav-dashboard">Dashboard</a>
+          <a href="#" class="nav-logout" style="display: none">Logout</a>
+          <a href="/index.html#register" class="nav-register" style="display: none">Register</a>
+          <a href="/index.html" class="nav-login">Login</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Manager Management</h1>
+        <a href="/dashboard.html" class="btn-secondary">Back to Dashboard</a>
+      </div>
+
+      <div class="dashboard-content">
+        <div class="dashboard-actions">
+          <button id="addManagerBtn" class="btn-primary">Add New Manager</button>
+        </div>
+
+        <div id="managerTableContainer">
+          <table id="managerTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Surname</th>
+                <th>Email</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="managerTableBody">
+              <!-- Managers will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="managerMessage" class="message"></div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Manager Modal -->
+    <div id="managerModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modalTitle">Add Manager</h2>
+        <form id="managerForm">
+          <input type="hidden" id="managerId" />
+          <div class="form-group">
+            <label for="managerUsername">Username *</label>
+            <input type="text" id="managerUsername" required />
+          </div>
+          <div class="form-group">
+            <label for="managerPassword">Password *</label>
+            <input type="password" id="managerPassword" />
+            <small>Leave empty to keep current password</small>
+          </div>
+          <div class="form-group">
+            <label for="managerName">Name *</label>
+            <input type="text" id="managerName" required />
+          </div>
+          <div class="form-group">
+            <label for="managerSurname">Surname *</label>
+            <input type="text" id="managerSurname" required />
+          </div>
+          <div class="form-group">
+            <label for="managerEmail">Email *</label>
+            <input type="email" id="managerEmail" required />
+          </div>
+          <div class="form-group">
+            <label for="managerGender">Gender</label>
+            <select id="managerGender">
+              <option value="">Select Gender</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="managerBirthDate">Birth Date</label>
+            <input type="date" id="managerBirthDate" />
+          </div>
+          <div class="form-group">
+            <label for="managerBirthPlace">Birth Place</label>
+            <input type="text" id="managerBirthPlace" />
+          </div>
+          <div class="form-group">
+            <label for="managerPhone">Phone Number</label>
+            <input type="tel" id="managerPhone" />
+          </div>
+          <div class="form-group">
+            <label for="managerSSN">SSN</label>
+            <input type="text" id="managerSSN" />
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/header.js"></script>
+    <script src="../js/manager.js"></script>
+  </body>
+</html>
+

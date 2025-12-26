@@ -1,0 +1,486 @@
+@use "sass:color";
+@use "variables" as *;
+@use "mixins" as *;
+
+// Courses Page Styles
+.courses-page-section {
+  padding: $spacing-xl 0;
+  background: $color1-op-10;
+  min-height: calc(100vh - 200px);
+
+  .page-title {
+    text-align: center;
+    color: $color1;
+    margin-bottom: 3rem;
+    font-size: 2.5rem;
+    letter-spacing: 0.3rem;
+    @include shadow(text, 0 3px 3px $color2);
+  }
+
+  .courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: $spacing-xl; // Increased gap for better separation
+    padding: 0 $spacing-md; // Add padding to prevent edge cards from touching edges
+  }
+}
+
+// Course Card Styles (with clickable effect)
+.course-card {
+  height: 100%;
+  @include card;
+  cursor: pointer;
+  @include transition(transform 0.3s, box-shadow 0.3s);
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    @include transform(translateY(-8px));
+    @include shadow(box, 0 8px 25px rgba(16, 68, 81, 0.2));
+    
+    .course-image img {
+      @include transform(scale(1.05));
+    }
+  }
+
+  .course-image {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    @include border-radius($border-radius);
+    margin-bottom: $spacing-md;
+    position: relative;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      @include transition(transform 0.5s);
+    }
+  }
+
+  .course-content {
+    h3 {
+      margin-top: 20px;
+      color: $color2;
+      margin-bottom: $spacing-xs;
+      @include transition(color 0.3s);
+    }
+
+    p {
+      color: $color2-op-50;
+      margin-bottom: $spacing-sm;
+      line-height: 1.6;
+    }
+
+    .course-meta {
+      background: none;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      @include flex($gap: $spacing-md);
+      font-weight: 600;
+      font-size: 1.2rem;
+      color: $color2;
+      flex-wrap: wrap;
+
+      span {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.95rem;
+      }
+    }
+  }
+
+  // Click indicator
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(250, 197, 76, 0);
+    @include transition(background 0.3s);
+    pointer-events: none;
+  }
+
+  &:active::after {
+    background: rgba(250, 197, 76, 0.1);
+  }
+}
+
+// Course Modal Styles
+.course-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  @include flex-center;
+  animation: fadeIn 0.3s ease;
+
+  .course-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+  }
+
+  .course-modal-content {
+    position: relative;
+    background: $white;
+    @include border-radius(16px);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    @include shadow(box, 0 20px 60px rgba(0, 0, 0, 0.3));
+    border-top: 7px solid $color2;
+    animation: slideUp 0.3s ease;
+    z-index: 1;
+
+    .course-modal-close {
+      position: absolute;
+      right: 1.5rem;
+      top: 1.5rem;
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: $color2;
+      cursor: pointer;
+      @include transition(color 0.2s);
+      line-height: 1;
+      width: 40px;
+      height: 40px;
+      @include flex-center;
+      z-index: 10;
+      @include border-radius(50%);
+      background: rgba(255, 255, 255, 0.9);
+
+      &:hover {
+        color: $color1;
+        background: $color1-op-10;
+      }
+    }
+
+    .course-modal-image {
+      width: 100%;
+      height: 300px;
+      overflow: hidden;
+      position: relative;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .course-modal-body {
+      padding: 2rem;
+
+      h2 {
+        color: $color2;
+        margin-bottom: $spacing-md;
+        font-size: 2rem;
+      }
+
+      .course-modal-description {
+        color: $color2-op-50;
+        font-size: 1.1rem;
+        line-height: 1.8;
+        margin-bottom: $spacing-lg;
+      }
+
+      .course-modal-details {
+        background: $color1-op-10;
+        padding: $spacing-md;
+        @include border-radius(8px);
+        margin-bottom: $spacing-lg;
+
+        .course-detail-item {
+          margin-bottom: $spacing-sm;
+          color: $color2;
+          font-size: 1rem;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          strong {
+            color: $color2;
+            margin-right: 0.5rem;
+          }
+        }
+      }
+
+      .course-modal-actions {
+        @include flex($jc: flex-end, $gap: $spacing-md);
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    @include transform(translateY(50px));
+    opacity: 0;
+  }
+  to {
+    @include transform(translateY(0));
+    opacity: 1;
+  }
+}
+
+// Events Page Styles
+.events-page-section {
+  padding: $spacing-xl 0;
+  background: $color1-op-10;
+  min-height: calc(100vh - 200px);
+
+  .page-title {
+    text-align: center;
+    color: $color1;
+    margin-bottom: 3rem;
+    font-size: 2.5rem;
+    letter-spacing: 0.3rem;
+    @include shadow(text, 0 3px 3px $color2);
+  }
+
+  .events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: $spacing-xl; // Increased gap like courses
+    padding: 0 $spacing-md; // Add padding to prevent edge cards from touching edges
+  }
+
+  .event-card {
+    height: 100%;
+    @include card;
+    cursor: pointer;
+    @include transition(transform 0.3s, box-shadow 0.3s);
+    position: relative;
+    overflow: hidden;
+    margin: 0; // Remove any default margins
+
+    &:hover {
+      @include transform(translateY(-8px));
+      @include shadow(box, 0 8px 25px rgba(16, 68, 81, 0.2));
+      
+      .event-image img {
+        @include transform(scale(1.05));
+      }
+    }
+
+    .event-image {
+      width: 100%;
+      height: 200px;
+      overflow: hidden;
+      @include border-radius($border-radius);
+      margin-bottom: $spacing-md;
+      position: relative;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        @include transition(transform 0.5s);
+      }
+    }
+
+    .event-content {
+      h3 {
+        margin-top: 20px;
+        color: $color2;
+        font-size: 1.5rem;
+        text-align: center;
+        margin-bottom: $spacing-sm;
+        @include transition(color 0.3s);
+      }
+
+      .event-meta {
+        padding-top: 20px;
+        padding-bottom: 20px;
+        font-weight: 500;
+        font-size: 0.9rem;
+        color: $color2;
+        @include flex($gap: $spacing-md);
+        flex-wrap: wrap;
+        justify-content: center;
+
+        span {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+        }
+
+        i {
+          color: $color1;
+        }
+      }
+    }
+
+    // Click indicator
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(250, 197, 76, 0);
+      @include transition(background 0.3s);
+      pointer-events: none;
+    }
+
+    &:active::after {
+      background: rgba(250, 197, 76, 0.1);
+    }
+  }
+}
+
+// Event Modal Styles (similar to course modal)
+.event-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  @include flex-center;
+  animation: fadeIn 0.3s ease;
+
+  .event-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+  }
+
+  .event-modal-content {
+    position: relative;
+    background: $white;
+    @include border-radius(16px);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    @include shadow(box, 0 20px 60px rgba(0, 0, 0, 0.3));
+    border-top: 7px solid $color2;
+    animation: slideUp 0.3s ease;
+    z-index: 1;
+
+    .event-modal-close {
+      position: absolute;
+      right: 1.5rem;
+      top: 1.5rem;
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: $color2;
+      cursor: pointer;
+      @include transition(color 0.2s);
+      line-height: 1;
+      width: 40px;
+      height: 40px;
+      @include flex-center;
+      z-index: 10;
+      @include border-radius(50%);
+      background: rgba(255, 255, 255, 0.9);
+
+      &:hover {
+        color: $color1;
+        background: $color1-op-10;
+      }
+    }
+
+    .event-modal-image {
+      width: 100%;
+      height: 300px;
+      overflow: hidden;
+      position: relative;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .event-modal-body {
+      padding: 2rem;
+
+      h2 {
+        color: $color2;
+        margin-bottom: $spacing-md;
+        font-size: 2rem;
+      }
+
+      .event-modal-details {
+        background: $color1-op-10;
+        padding: $spacing-md;
+        @include border-radius(8px);
+        margin-bottom: $spacing-lg;
+
+        .event-detail-item {
+          margin-bottom: $spacing-sm;
+          color: $color2;
+          font-size: 1rem;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          strong {
+            color: $color2;
+            margin-right: 0.5rem;
+          }
+        }
+      }
+
+      .event-modal-actions {
+        @include flex($jc: flex-end, $gap: $spacing-md);
+      }
+    }
+  }
+}
+
+// Responsive
+@include responsive($breakpoint-md) {
+  .course-modal-content,
+  .event-modal-content {
+    width: 95%;
+    max-height: 95vh;
+
+    .course-modal-image,
+    .event-modal-image {
+      height: 200px;
+    }
+
+    .course-modal-body,
+    .event-modal-body {
+      padding: 1.5rem;
+
+      h2 {
+        font-size: 1.5rem;
+      }
+    }
+  }
+}
+

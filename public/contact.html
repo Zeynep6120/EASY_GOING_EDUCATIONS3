@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact - EasyGoing Education</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header id="main-header">
+      <nav class="navbar">
+        <div class="container">
+          <a href="/home.html" class="logo">
+            <img src="/img/logos/logo-dark.png" alt="EasyGoing Education" style="height: 40px;" />
+          </a>
+          <ul class="nav-menu">
+            <li><a href="/home.html">Home</a></li>
+            <li><a href="/about.html">About</a></li>
+            <li><a href="/courses.html">Courses</a></li>
+            <li><a href="/events.html">Events</a></li>
+            <li><a href="/contact.html" class="active">Contact</a></li>
+            <li class="nav-login"><a href="/index.html">Login</a></li>
+            <li class="nav-register"><a href="/index.html#register">Register</a></li>
+            <li class="nav-dashboard" style="display: none;"><a href="/dashboard.html">Dashboard</a></li>
+            <li class="nav-logout" style="display: none;"><a href="#">Logout</a></li>
+          </ul>
+          <button class="nav-toggle" aria-label="Toggle navigation">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Contact Section -->
+    <section class="contact-section">
+      <div class="container">
+        <h1 class="page-title">Contact Us</h1>
+        <div class="contact-content">
+          <div class="contact-form-container">
+            <h2>Send us a message</h2>
+            <form id="contactForm" class="contact-form">
+              <div class="form-group">
+                <label for="name">Your Name *</label>
+                <input type="text" id="name" name="name" required />
+              </div>
+              <div class="form-group">
+                <label for="email">Your Email *</label>
+                <input type="email" id="email" name="email" required />
+              </div>
+              <div class="form-group">
+                <label for="subject">Subject</label>
+                <input type="text" id="subject" name="subject" />
+              </div>
+              <div class="form-group">
+                <label for="message">Your Message *</label>
+                <textarea id="message" name="message" required></textarea>
+              </div>
+              <button type="submit" class="btn-primary">Send Message</button>
+              <p id="contactMessage" class="message"></p>
+            </form>
+          </div>
+          <div class="contact-info-container">
+            <h2>Contact Information</h2>
+            <div class="contact-info">
+              <p><strong>Email:</strong></p>
+              <p>info@easygoingeducations.com</p>
+              <p>zeynepozmen6120@gmail.com</p>
+              <p>melisayildirim149@gmail.com</p>
+              <p><strong>Phone:</strong></p>
+              <p>+90 553 588 67 87</p>
+              <p>+90 506 165 02 20</p>
+              <p><strong>Adres:</strong> Gültepe, Mecnun Otyakmaz Cd No:1, 58000 Sivas Merkez/Sivas</p>
+            </div>
+            <div class="map-container">
+              <iframe
+                src="https://www.google.com/maps?q=Gültepe,+Mecnun+Otyakmaz+Cd+No:1,+58000+Sivas+Merkez/Sivas&output=embed"
+                width="100%"
+                height="300"
+                style="border:0;"
+                allowfullscreen=""
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+              ></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="main-footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3>EasyGoing Education</h3>
+            <p>Empowering Minds, One Step at a Time</p>
+          </div>
+          <div class="footer-section">
+            <h3>Links</h3>
+            <ul>
+              <li><a href="/home.html">Home</a></li>
+              <li><a href="/about.html">About</a></li>
+              <li><a href="/courses.html">Courses</a></li>
+              <li><a href="/events.html">Events</a></li>
+              <li><a href="/contact.html">Contact</a></li>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <h3>Contact</h3>
+            <p>Email: info@easygoingeducations.com</p>
+            <p>Email: zeynepozmen6120@gmail.com</p>
+            <p>Email: melisayildirim149@gmail.com</p>
+            <p>Phone: +90 553 588 67 87</p>
+            <p>Phone: +90 506 165 02 20</p>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2024 EasyGoing Education. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="js/utils.js"></script>
+    <script src="js/header.js"></script>
+    <script src="js/contact.js"></script>
+  </body>
+</html>
+

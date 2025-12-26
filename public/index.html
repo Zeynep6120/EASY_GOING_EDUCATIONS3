@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EasyGoing Education - Login</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body class="login-page">
+    <!-- Header -->
+    <header id="main-header">
+      <nav class="navbar">
+    <div class="container">
+          <a href="/home.html" class="logo">
+            <img src="/img/logos/logo-dark.png" alt="EasyGoing Education" style="height: 40px;" />
+          </a>
+          <ul class="nav-menu">
+            <li><a href="/home.html">Home</a></li>
+            <li><a href="/about.html">About</a></li>
+            <li><a href="/courses.html">Courses</a></li>
+            <li><a href="/events.html">Events</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+            <li class="nav-login"><a href="/index.html" class="active">Login</a></li>
+            <li class="nav-register"><a href="/index.html#register">Register</a></li>
+            <li class="nav-dashboard" style="display: none;"><a href="/dashboard.html">Dashboard</a></li>
+            <li class="nav-logout" style="display: none;"><a href="#">Logout</a></li>
+          </ul>
+          <button class="nav-toggle" aria-label="Toggle navigation">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <div class="login-container">
+      <div class="login-header">
+      <h1>EasyGoing Education</h1>
+      <p class="subtitle">Role-based Education Management System</p>
+      </div>
+
+      <div class="login-card">
+      <div class="tabs">
+        <button id="loginTab" class="tab active">Login</button>
+        <button id="registerTab" class="tab">Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="loginForm" class="form-container">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            placeholder="admin / manager / asst / instructor / student"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            placeholder="12345"
+            value="12345"
+            required
+          />
+        </div>
+
+        <button id="loginBtn" class="btn-primary">Login</button>
+
+        <div class="action-buttons">
+          <button id="seedUsersBtn" class="btn-secondary">Seed Users</button>
+          <button id="apiHealthBtn" class="btn-secondary">API Health</button>
+          <button id="adminStatusBtn" class="btn-secondary">Admin Status</button>
+        </div>
+
+        <p id="loginMessage" class="message"></p>
+      </div>
+
+      <!-- Register Form -->
+      <div id="registerForm" class="form-container hidden">
+        <h3>Basic Information</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="regUsername">Username *</label>
+            <input type="text" id="regUsername" required />
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Password *</label>
+            <input type="password" id="regPassword" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="regName">Name *</label>
+            <input type="text" id="regName" required />
+          </div>
+          <div class="form-group">
+            <label for="regSurname">Surname *</label>
+            <input type="text" id="regSurname" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="regEmail">Email *</label>
+            <input type="email" id="regEmail" required />
+          </div>
+          <div class="form-group">
+            <label for="regRole">Role *</label>
+            <select id="regRole" required>
+              <option value="">Select Role</option>
+              <option value="MANAGER">Manager</option>
+              <option value="ASSISTANT_MANAGER">Assistant Manager</option>
+              <option value="INSTRUCTOR">Instructor</option>
+              <option value="STUDENT">Student</option>
+            </select>
+            <small
+              style="
+                color: #666;
+                font-size: 0.85rem;
+                display: block;
+                margin-top: 0.25rem;
+              "
+            >
+            
+            </small>
+          </div>
+        </div>
+
+        <h3>Additional Information</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="regGender">Gender</label>
+            <select id="regGender">
+              <option value="">Select</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="regBirthDate">Birth Date</label>
+            <input type="date" id="regBirthDate" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="regBirthPlace">Birth Place</label>
+            <input type="text" id="regBirthPlace" />
+          </div>
+          <div class="form-group">
+            <label for="regPhone">Phone Number</label>
+            <input type="tel" id="regPhone" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="regSSN">SSN</label>
+          <input type="text" id="regSSN" />
+        </div>
+
+        <!-- Student Specific Fields -->
+        <div id="studentFields" class="role-specific-fields hidden">
+          <h3>Student Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="regFatherName">Father Name</label>
+              <input type="text" id="regFatherName" />
+            </div>
+            <div class="form-group">
+              <label for="regMotherName">Mother Name</label>
+              <input type="text" id="regMotherName" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="regAdvisorInstructor">Advisor Instructor</label>
+            <select id="regAdvisorInstructor">
+              <option value="">Select Advisor Instructor</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Instructor Specific Fields -->
+        <div id="instructorFields" class="role-specific-fields hidden">
+          <h3>Instructor Information</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="regIsAdvisorInstructor" />
+              Is Advisor Instructor
+            </label>
+          </div>
+        </div>
+
+        <button id="registerBtn" class="btn-primary">Register</button>
+        <p id="registerMessage" class="message"></p>
+        </div>
+      </div>
+    </div>
+    <script src="js/utils.js"></script>
+    <script src="js/header.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

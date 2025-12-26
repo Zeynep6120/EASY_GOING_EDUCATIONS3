@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Grades & Meets - Dashboard</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/dashboard.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header id="main-header">
+      <div class="container">
+        <div class="logo">
+          <a href="/home.html">
+            <img src="/img/logos/logo-dark.png" alt="EasyGoing Education" style="height: 40px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <span style="display: none;">EasyGoing Education</span>
+          </a>
+        </div>
+        <nav class="nav-menu">
+          <a href="/home.html">Home</a>
+          <a href="/dashboard.html" class="nav-dashboard">Dashboard</a>
+          <a href="#" class="nav-logout" style="display: none">Logout</a>
+          <a href="/index.html#register" class="nav-register" style="display: none">Register</a>
+          <a href="/index.html" class="nav-login">Login</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Grades & Meets</h1>
+        <a href="/dashboard.html" class="btn-secondary">Back to Dashboard</a>
+      </div>
+
+      <div class="dashboard-content">
+        <!-- Tabs for Grades and Meets -->
+        <div class="tabs-container" style="margin-bottom: 2rem;">
+          <button class="tab-btn active" onclick="showTab('grades')">My Grades</button>
+          <button class="tab-btn" onclick="showTab('meets')">My Meets</button>
+        </div>
+
+        <!-- Grades Tab -->
+        <div id="gradesTab" class="tab-content active">
+          <div class="dashboard-actions" style="margin-bottom: 2rem;">
+            <div class="form-group" style="display: inline-block; margin-right: 1rem;">
+              <label for="termFilterGrades">Filter by Term:</label>
+              <select id="termFilterGrades" style="padding: 0.5rem; margin-left: 0.5rem;">
+                <option value="">All Terms</option>
+              </select>
+            </div>
+            <button id="refreshGradesBtn" class="btn-primary">Refresh</button>
+          </div>
+
+          <div id="gradesMessage" class="message"></div>
+          <div id="gradesTableContainer" class="grades-table-container">
+            <table id="gradesTable" class="grades-table">
+              <thead>
+                <tr>
+                  <th>Lesson</th>
+                  <th>Term</th>
+                  <th>Absentee</th>
+                  <th>Midterm</th>
+                  <th>Final</th>
+                  <th>Average</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody id="gradesTableBody">
+                <!-- Grades will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Meets Tab -->
+        <div id="meetsTab" class="tab-content" style="display: none;">
+          <div class="dashboard-actions" style="margin-bottom: 2rem;">
+            <button id="refreshMeetsBtn" class="btn-primary">Refresh</button>
+          </div>
+
+          <div id="meetsMessage" class="message"></div>
+          <div id="meetsList" class="meets-grid">
+            <!-- Meets will be loaded here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/header.js"></script>
+    <script src="../js/grades-meets.js"></script>
+  </body>
+</html>
+

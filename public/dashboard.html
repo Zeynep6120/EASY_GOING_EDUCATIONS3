@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - EasyGoing Education</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/dashboard.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header id="main-header">
+      <nav class="navbar">
+        <div class="container">
+          <a href="/home.html" class="logo">
+            <img src="/img/logos/logo-dark.png" alt="EasyGoing Education" style="height: 40px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <span style="display: none;">EasyGoing Education</span>
+          </a>
+          <ul class="nav-menu">
+            <li><a href="/home.html">Home</a></li>
+            <li><a href="/dashboard.html" class="active">Dashboard</a></li>
+            <li class="nav-register" style="display: none;"><a href="/index.html#register">Register</a></li>
+            <li class="nav-logout"><a href="#">Logout</a></li>
+          </ul>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Dashboard Content -->
+    <section class="dashboard-section">
+      <div class="container">
+        <h1 class="page-title">Dashboard</h1>
+        <div class="dashboard-welcome">
+          <p>Welcome, <span id="userName"></span>!</p>
+          <p>Role: <span id="userRole"></span></p>
+        </div>
+
+        <!-- Dashboard Navigation -->
+        <div class="dashboard-nav" id="dashboardNav">
+          <!-- Navigation items will be loaded based on user role -->
+        </div>
+
+        <!-- Dashboard Content Area -->
+        <div class="dashboard-content" id="dashboardContent">
+          <p>Select an option from the navigation menu.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="main-footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3>EasyGoing Education</h3>
+            <p>Empowering Minds, One Step at a Time</p>
+          </div>
+          <div class="footer-section">
+            <h3>Links</h3>
+            <ul>
+              <li><a href="/home.html">Home</a></li>
+              <li><a href="/about.html">About</a></li>
+              <li><a href="/courses.html">Courses</a></li>
+              <li><a href="/events.html">Events</a></li>
+              <li><a href="/contact.html">Contact</a></li>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <h3>Contact</h3>
+            <p>Email: info@easygoingeducations.com</p>
+            <p>Email: zeynepozmen6120@gmail.com</p>
+            <p>Email: melisayildirim149@gmail.com</p>
+            <p>Phone: +90 553 588 67 87</p>
+            <p>Phone: +90 506 165 02 20</p>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2024 EasyGoing Education. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="js/utils.js"></script>
+    <script src="js/header.js"></script>
+    <script src="js/dashboard.js"></script>
+  </body>
+</html>
+
