@@ -154,7 +154,7 @@ async function displayPrograms(programs) {
     .map(
       (program) => `
     <tr>
-      <td>${program.id || program.lesson_program_id}</td>
+      <td>${program.id || program.course_program_id}</td>
       <td>${program.day || program.day_of_week || ""}</td>
       <td>${program.start_time || ""}</td>
       <td>${program.stop_time || ""}</td>
@@ -162,8 +162,8 @@ async function displayPrograms(programs) {
       <td>${program.course_id !== null && program.course_id !== undefined ? program.course_id : "-"}</td>
       <td>${program.course_name ? program.course_name : "-"}</td>
       <td>
-        <button class="btn-small btn-edit" onclick="editProgram(${program.id || program.lesson_program_id})">Edit</button>
-        <button class="btn-small btn-delete" onclick="deleteProgram(${program.id || program.lesson_program_id})">Delete</button>
+        <button class="btn-small btn-edit" onclick="editProgram(${program.id || program.course_program_id})">Edit</button>
+        <button class="btn-small btn-delete" onclick="deleteProgram(${program.id || program.course_program_id})">Delete</button>
       </td>
     </tr>
   `
@@ -309,7 +309,7 @@ async function handleSubmit(e) {
       }
 
       const created = await res.json();
-      createdProgramId = created.id || created.lesson_program_id;
+      createdProgramId = created.id || created.course_program_id;
 
       // Add lesson to program
       if (lessonId && createdProgramId) {
@@ -357,7 +357,7 @@ async function editProgram(id) {
 
     // Fill form
     document.getElementById("modalTitle").textContent = "Edit Program";
-    document.getElementById("programId").value = program.id || program.lesson_program_id;
+    document.getElementById("programId").value = program.id || program.course_program_id;
     document.getElementById("programDay").value = program.day || program.day_of_week || "";
     document.getElementById("programStartTime").value = program.start_time || "";
     document.getElementById("programStopTime").value = program.stop_time || "";

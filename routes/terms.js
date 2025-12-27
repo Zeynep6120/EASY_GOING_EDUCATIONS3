@@ -93,9 +93,9 @@ router.delete("/terms/:id", authenticateToken, requireMinRole("MANAGER"), async 
   try {
     const id = Number(req.params.id);
     
-    // Check if term is referenced by lesson_programs
+    // Check if term is referenced by course_programs
     const checkPrograms = await pool.query(
-      "SELECT COUNT(*) as count FROM lesson_programs WHERE education_term_id = $1",
+      "SELECT COUNT(*) as count FROM course_programs WHERE education_term_id = $1",
       [id]
     );
     

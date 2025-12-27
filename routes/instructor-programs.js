@@ -12,7 +12,7 @@ router.get("/instructor-programs", authenticateToken, requireMinRole("MANAGER"),
     const query = `
       SELECT 
         ip.instructor_id,
-        ip.lesson_program_id,
+        ip.course_program_id,
         u.user_id,
         u.username as instructor_username,
         u.name as instructor_name,
@@ -26,10 +26,10 @@ router.get("/instructor-programs", authenticateToken, requireMinRole("MANAGER"),
         et.term_id
       FROM instructor_programs ip
       INNER JOIN users u ON u.user_id = ip.instructor_id
-      INNER JOIN lesson_programs lp ON lp.lesson_program_id = ip.lesson_program_id
+      INNER JOIN course_programs lp ON lp.course_program_id = ip.course_program_id
       INNER JOIN education_terms et ON et.term_id = lp.education_term_id
       WHERE u.role = 'INSTRUCTOR'
-      ORDER BY ip.instructor_id, ip.lesson_program_id
+      ORDER BY ip.instructor_id, ip.course_program_id
     `;
     const result = await pool.query(query);
     
@@ -38,9 +38,9 @@ router.get("/instructor-programs", authenticateToken, requireMinRole("MANAGER"),
       result.rows.map(async (row) => {
         // instructor_id is always set since we use INNER JOIN
         const instructorId = row.instructor_id;
-        // Only fetch courses if there's a lesson_program_id
+        // Only fetch courses if there's a course_program_id
         let courses = [];
-        if (row.lesson_program_id) {
+        if (row.course_program_id) {
           try {
             // Try to get courses from program_lessons table first (most common)
             const coursesQuery = `
@@ -52,9 +52,9 @@ router.get("/instructor-programs", authenticateToken, requireMinRole("MANAGER"),
                 c.level
               FROM program_lessons pl
               JOIN courses c ON c.course_id = pl.lesson_id
-              WHERE pl.lesson_program_id = $1
+              WHERE pl.course_program_id = $1
             `;
-            const coursesResult = await pool.query(coursesQuery, [row.lesson_program_id]);
+            const coursesResult = await pool.query(coursesQuery, [row.course_program_id]);
             courses = coursesResult.rows;
           } catch (err) {
             // If that fails, try program_courses table
@@ -68,9 +68,9 @@ router.get("/instructor-programs", authenticateToken, requireMinRole("MANAGER"),
                   c.level
                 FROM program_courses pc
                 JOIN courses c ON c.course_id = pc.course_id
-                WHERE pc.lesson_program_id = $1
+                WHERE pc.course_program_id = $1
               `;
-              const coursesResult = await pool.query(coursesQuery, [row.lesson_program_id]);
+              const coursesResult = await pool.query(coursesQuery, [row.course_program_id]);
               courses = coursesResult.rows;
             } catch (err2) {
               // If that also fails, try lessons table
@@ -83,9 +83,9 @@ router.get("/instructor-programs", authenticateToken, requireMinRole("MANAGER"),
                     l.compulsory
                   FROM program_lessons pl
                   JOIN lessons l ON l.lesson_id = pl.lesson_id
-                  WHERE pl.lesson_program_id = $1
+                  WHERE pl.course_program_id = $1
                 `;
-                const lessonsResult = await pool.query(lessonsQuery, [row.lesson_program_id]);
+                const lessonsResult = await pool.query(lessonsQuery, [row.course_program_id]);
                 courses = lessonsResult.rows.map(l => ({
                   course_id: l.course_id,
                   course_name: l.course_name,
@@ -93,7 +93,7 @@ router.get("/instructor-programs", authenticateToken, requireMinRole("MANAGER"),
                   compulsory: l.compulsory
                 }));
               } catch (err3) {
-                console.error("Error loading courses for program:", row.lesson_program_id, err3);
+                console.error("Error loading courses for program:", row.course_program_id, err3);
               }
             }
           }
@@ -102,7 +102,7 @@ router.get("/instructor-programs", authenticateToken, requireMinRole("MANAGER"),
         // Return all instructor and program data with courses
         const result = {
           instructor_id: instructorId,
-          lesson_program_id: row.lesson_program_id,
+          course_program_id: row.course_program_id,
           instructor_name: row.instructor_name,
           instructor_surname: row.instructor_surname,
           instructor_email: row.instructor_email,
@@ -141,11 +141,11 @@ router.post("/instructor-programs", authenticateToken, requireMinRole("MANAGER")
   try {
     await client.query("BEGIN");
 
-    const { instructor_id, lesson_program_id } = req.body;
+    const { instructor_id, course_program_id } = req.body;
     
-    if (!instructor_id || !lesson_program_id) {
+    if (!instructor_id || !course_program_id) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ message: "instructor_id and lesson_program_id are required" });
+      return res.status(400).json({ message: "instructor_id and course_program_id are required" });
     }
 
     // Get instructor information
@@ -164,11 +164,11 @@ router.post("/instructor-programs", authenticateToken, requireMinRole("MANAGER")
     // Get program information
     const programQuery = `
       SELECT lp.day_of_week, lp.start_time, lp.stop_time, et.term_name
-      FROM lesson_programs lp
+      FROM course_programs lp
       LEFT JOIN education_terms et ON lp.education_term_id = et.term_id
-      WHERE lp.lesson_program_id = $1
+      WHERE lp.course_program_id = $1
     `;
-    const programResult = await client.query(programQuery, [lesson_program_id]);
+    const programResult = await client.query(programQuery, [course_program_id]);
     if (programResult.rows.length === 0) {
       await client.query("ROLLBACK");
       return res.status(404).json({ message: "Program not found" });
@@ -183,10 +183,10 @@ router.post("/instructor-programs", authenticateToken, requireMinRole("MANAGER")
         SELECT c.course_id, c.title
         FROM program_lessons pl
         JOIN courses c ON pl.lesson_id = c.course_id
-        WHERE pl.lesson_program_id = $1
+        WHERE pl.course_program_id = $1
         LIMIT 1
       `;
-      const courseResult = await client.query(courseQuery, [lesson_program_id]);
+      const courseResult = await client.query(courseQuery, [course_program_id]);
       if (courseResult.rows.length > 0) {
         courseId = courseResult.rows[0].course_id;
         courseName = courseResult.rows[0].title;
@@ -199,7 +199,7 @@ router.post("/instructor-programs", authenticateToken, requireMinRole("MANAGER")
 
     const query = `
       INSERT INTO instructor_programs (
-        instructor_id, lesson_program_id,
+        instructor_id, course_program_id,
         instructor_name, instructor_surname, instructor_email, instructor_username,
         program_id, day, time, term,
         course_id, course_name
@@ -209,12 +209,12 @@ router.post("/instructor-programs", authenticateToken, requireMinRole("MANAGER")
     `;
     const result = await client.query(query, [
       instructor_id,
-      lesson_program_id,
+      course_program_id,
       instructor.name,
       instructor.surname,
       instructor.email,
       instructor.username,
-      lesson_program_id, // program_id
+      course_program_id, // program_id
       program.day_of_week, // day
       timeStr, // time
       program.term_name || null, // term
@@ -236,24 +236,24 @@ router.post("/instructor-programs", authenticateToken, requireMinRole("MANAGER")
   }
 });
 
-// PUT /api/instructor-programs/:instructor_id/:lesson_program_id - Update instructor-program relationship
-router.put("/instructor-programs/:instructor_id/:lesson_program_id", authenticateToken, requireMinRole("MANAGER"), async (req, res) => {
+// PUT /api/instructor-programs/:instructor_id/:course_program_id - Update instructor-program relationship
+router.put("/instructor-programs/:instructor_id/:course_program_id", authenticateToken, requireMinRole("MANAGER"), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
     const oldInstructorId = Number(req.params.instructor_id);
-    const oldLessonProgramId = Number(req.params.lesson_program_id);
-    const { instructor_id: newInstructorId, lesson_program_id: newLessonProgramId } = req.body;
+    const oldLessonProgramId = Number(req.params.course_program_id);
+    const { instructor_id: newInstructorId, course_program_id: newLessonProgramId } = req.body;
 
     if (!newInstructorId || !newLessonProgramId) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ message: "instructor_id and lesson_program_id are required" });
+      return res.status(400).json({ message: "instructor_id and course_program_id are required" });
     }
 
     // Check if old record exists
     const oldRecord = await client.query(
-      "SELECT * FROM instructor_programs WHERE instructor_id = $1 AND lesson_program_id = $2",
+      "SELECT * FROM instructor_programs WHERE instructor_id = $1 AND course_program_id = $2",
       [oldInstructorId, oldLessonProgramId]
     );
     if (oldRecord.rows.length === 0) {
@@ -263,7 +263,7 @@ router.put("/instructor-programs/:instructor_id/:lesson_program_id", authenticat
 
     // Check if new combination already exists
     const existingRecord = await client.query(
-      "SELECT * FROM instructor_programs WHERE instructor_id = $1 AND lesson_program_id = $2",
+      "SELECT * FROM instructor_programs WHERE instructor_id = $1 AND course_program_id = $2",
       [newInstructorId, newLessonProgramId]
     );
     if (existingRecord.rows.length > 0 && (newInstructorId !== oldInstructorId || newLessonProgramId !== oldLessonProgramId)) {
@@ -287,9 +287,9 @@ router.put("/instructor-programs/:instructor_id/:lesson_program_id", authenticat
     // Get new program information
     const programQuery = `
       SELECT lp.day_of_week, lp.start_time, lp.stop_time, et.term_name
-      FROM lesson_programs lp
+      FROM course_programs lp
       LEFT JOIN education_terms et ON lp.education_term_id = et.term_id
-      WHERE lp.lesson_program_id = $1
+      WHERE lp.course_program_id = $1
     `;
     const programResult = await client.query(programQuery, [newLessonProgramId]);
     if (programResult.rows.length === 0) {
@@ -306,7 +306,7 @@ router.put("/instructor-programs/:instructor_id/:lesson_program_id", authenticat
         SELECT c.course_id, c.title
         FROM program_lessons pl
         JOIN courses c ON pl.lesson_id = c.course_id
-        WHERE pl.lesson_program_id = $1
+        WHERE pl.course_program_id = $1
         LIMIT 1
       `;
       const courseResult = await client.query(courseQuery, [newLessonProgramId]);
@@ -322,14 +322,14 @@ router.put("/instructor-programs/:instructor_id/:lesson_program_id", authenticat
 
     // Delete old record
     await client.query(
-      "DELETE FROM instructor_programs WHERE instructor_id = $1 AND lesson_program_id = $2",
+      "DELETE FROM instructor_programs WHERE instructor_id = $1 AND course_program_id = $2",
       [oldInstructorId, oldLessonProgramId]
     );
 
     // Insert new record
     const query = `
       INSERT INTO instructor_programs (
-        instructor_id, lesson_program_id,
+        instructor_id, course_program_id,
         instructor_name, instructor_surname, instructor_email, instructor_username,
         program_id, day, time, term,
         course_id, course_name
@@ -363,18 +363,18 @@ router.put("/instructor-programs/:instructor_id/:lesson_program_id", authenticat
   }
 });
 
-// DELETE /api/instructor-programs/:instructor_id/:lesson_program_id - Delete instructor-program relationship
-router.delete("/instructor-programs/:instructor_id/:lesson_program_id", authenticateToken, requireMinRole("MANAGER"), async (req, res) => {
+// DELETE /api/instructor-programs/:instructor_id/:course_program_id - Delete instructor-program relationship
+router.delete("/instructor-programs/:instructor_id/:course_program_id", authenticateToken, requireMinRole("MANAGER"), async (req, res) => {
   try {
     const instructor_id = Number(req.params.instructor_id);
-    const lesson_program_id = Number(req.params.lesson_program_id);
+    const course_program_id = Number(req.params.course_program_id);
 
     const query = `
       DELETE FROM instructor_programs
-      WHERE instructor_id = $1 AND lesson_program_id = $2
+      WHERE instructor_id = $1 AND course_program_id = $2
       RETURNING *
     `;
-    const result = await pool.query(query, [instructor_id, lesson_program_id]);
+    const result = await pool.query(query, [instructor_id, course_program_id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Not found" });

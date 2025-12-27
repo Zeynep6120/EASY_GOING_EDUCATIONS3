@@ -78,7 +78,7 @@ async function loadPrograms() {
     select.innerHTML = '<option value="">Select Program</option>';
     programs.forEach((program) => {
       const option = document.createElement("option");
-      option.value = program.lesson_program_id || program.id;
+      option.value = program.course_program_id || program.id;
       option.textContent = `${program.day_of_week || ""} ${formatTime(program.start_time)} - ${formatTime(program.stop_time)} (${program.term_name || ""})`;
       select.appendChild(option);
     });
@@ -172,15 +172,15 @@ function displayStudentPrograms(studentPrograms) {
       ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.student_surname || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.student_email || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.student_username || ""}</td>` : ''}
-      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.lesson_program_id}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.course_program_id}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.day_of_week || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${formatTime(sp.start_time)} - ${formatTime(sp.stop_time)}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.term_name || ""}</td>` : ''}
       <td>${course.course_id || ""}</td>
       <td>${course.course_name || course.title || "N/A"}</td>
       ${isFirstCourse ? `<td rowspan="${sp.courses.length}">
-        <button class="btn-small btn-edit" onclick="editStudentProgram(${sp.student_id}, ${sp.lesson_program_id})" style="margin-right: 5px;">Edit</button>
-        <button class="btn-small btn-delete" onclick="deleteStudentProgram(${sp.student_id}, ${sp.lesson_program_id})">Delete</button>
+        <button class="btn-small btn-edit" onclick="editStudentProgram(${sp.student_id}, ${sp.course_program_id})" style="margin-right: 5px;">Edit</button>
+        <button class="btn-small btn-delete" onclick="deleteStudentProgram(${sp.student_id}, ${sp.course_program_id})">Delete</button>
       </td>` : ''}
     </tr>
   `);
@@ -194,15 +194,15 @@ function displayStudentPrograms(studentPrograms) {
       <td>${sp.student_surname || ""}</td>
       <td>${sp.student_email || ""}</td>
       <td>${sp.student_username || ""}</td>
-      <td>${sp.lesson_program_id}</td>
+      <td>${sp.course_program_id}</td>
       <td>${sp.day_of_week || ""}</td>
       <td>${formatTime(sp.start_time)} - ${formatTime(sp.stop_time)}</td>
       <td>${sp.term_name || ""}</td>
       <td>-</td>
       <td>-</td>
       <td>
-        <button class="btn-small btn-edit" onclick="editStudentProgram(${sp.student_id}, ${sp.lesson_program_id})" style="margin-right: 5px;">Edit</button>
-        <button class="btn-small btn-delete" onclick="deleteStudentProgram(${sp.student_id}, ${sp.lesson_program_id})">Delete</button>
+        <button class="btn-small btn-edit" onclick="editStudentProgram(${sp.student_id}, ${sp.course_program_id})" style="margin-right: 5px;">Edit</button>
+        <button class="btn-small btn-delete" onclick="deleteStudentProgram(${sp.student_id}, ${sp.course_program_id})">Delete</button>
       </td>
     </tr>
   `);
@@ -269,10 +269,10 @@ async function handleSubmit(e) {
 
   const formData = {
     student_id: parseInt(document.getElementById("studentId").value),
-    lesson_program_id: parseInt(document.getElementById("lessonProgramId").value),
+    course_program_id: parseInt(document.getElementById("lessonProgramId").value),
   };
 
-  if (!formData.student_id || !formData.lesson_program_id) {
+  if (!formData.student_id || !formData.course_program_id) {
     showMessage(messageEl, "Please fill all required fields", "error");
     return;
   }

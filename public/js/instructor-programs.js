@@ -79,7 +79,7 @@ async function loadPrograms() {
     select.innerHTML = '<option value="">Select Program</option>';
     programs.forEach((program) => {
       const option = document.createElement("option");
-      option.value = program.lesson_program_id || program.id;
+      option.value = program.course_program_id || program.id;
       option.textContent = `${program.day_of_week || ""} ${formatTime(program.start_time)} - ${formatTime(program.stop_time)} (${program.term_name || ""})`;
       select.appendChild(option);
     });
@@ -135,7 +135,7 @@ async function loadInstructorPrograms() {
         instructor_surname: first.instructor_surname,
         instructor_email: first.instructor_email,
         instructor_username: first.instructor_username,
-        lesson_program_id: first.lesson_program_id,
+        course_program_id: first.course_program_id,
         day_of_week: first.day_of_week,
         term_name: first.term_name,
         courses: first.courses
@@ -186,14 +186,14 @@ function displayInstructorPrograms(instructorPrograms) {
       instructor_surname: ip.instructor_surname,
       instructor_email: ip.instructor_email,
       instructor_username: ip.instructor_username,
-      lesson_program_id: ip.lesson_program_id,
+      course_program_id: ip.course_program_id,
       day_of_week: ip.day_of_week,
       term_name: ip.term_name,
       courses_count: ip.courses ? ip.courses.length : 0
     });
     
     // If no program assigned, show instructor info but indicate no program
-    if (!ip.lesson_program_id) {
+    if (!ip.course_program_id) {
       rows.push(`
     <tr>
       <td>${ip.instructor_id || ""}</td>
@@ -225,15 +225,15 @@ function displayInstructorPrograms(instructorPrograms) {
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_surname || ip.instructor_full_name?.split(' ').slice(1).join(' ') || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_email || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_username || ""}</td>` : ''}
-      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.lesson_program_id || ""}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.course_program_id || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.day_of_week || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.start_time && ip.stop_time ? formatTime(ip.start_time) + " - " + formatTime(ip.stop_time) : ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.term_name || ""}</td>` : ''}
       <td>${course.course_id || ""}</td>
       <td>${course.course_name || course.title || "N/A"}</td>
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">
-        <button class="btn-small btn-edit" onclick="editInstructorProgram(${ip.instructor_id}, ${ip.lesson_program_id})" style="margin-right: 5px;">Edit</button>
-        <button class="btn-small btn-delete" onclick="deleteInstructorProgram(${ip.instructor_id}, ${ip.lesson_program_id})">Delete</button>
+        <button class="btn-small btn-edit" onclick="editInstructorProgram(${ip.instructor_id}, ${ip.course_program_id})" style="margin-right: 5px;">Edit</button>
+        <button class="btn-small btn-delete" onclick="deleteInstructorProgram(${ip.instructor_id}, ${ip.course_program_id})">Delete</button>
       </td>` : ''}
     </tr>
   `);
@@ -247,15 +247,15 @@ function displayInstructorPrograms(instructorPrograms) {
       <td>${ip.instructor_surname || ip.instructor_full_name?.split(' ').slice(1).join(' ') || ""}</td>
       <td>${ip.instructor_email || ""}</td>
       <td>${ip.instructor_username || ""}</td>
-      <td>${ip.lesson_program_id || ""}</td>
+      <td>${ip.course_program_id || ""}</td>
       <td>${ip.day_of_week || ""}</td>
       <td>${ip.start_time && ip.stop_time ? formatTime(ip.start_time) + " - " + formatTime(ip.stop_time) : ""}</td>
       <td>${ip.term_name || ""}</td>
       <td>-</td>
       <td>-</td>
       <td>
-        <button class="btn-small btn-edit" onclick="editInstructorProgram(${ip.instructor_id}, ${ip.lesson_program_id})" style="margin-right: 5px;">Edit</button>
-        <button class="btn-small btn-delete" onclick="deleteInstructorProgram(${ip.instructor_id}, ${ip.lesson_program_id})">Delete</button>
+        <button class="btn-small btn-edit" onclick="editInstructorProgram(${ip.instructor_id}, ${ip.course_program_id})" style="margin-right: 5px;">Edit</button>
+        <button class="btn-small btn-delete" onclick="deleteInstructorProgram(${ip.instructor_id}, ${ip.course_program_id})">Delete</button>
       </td>
     </tr>
   `);
@@ -322,10 +322,10 @@ async function handleSubmit(e) {
 
   const formData = {
     instructor_id: parseInt(document.getElementById("instructorId").value),
-    lesson_program_id: parseInt(document.getElementById("lessonProgramId").value),
+    course_program_id: parseInt(document.getElementById("lessonProgramId").value),
   };
 
-  if (!formData.instructor_id || !formData.lesson_program_id) {
+  if (!formData.instructor_id || !formData.course_program_id) {
     showMessage(messageEl, "Please fill all required fields", "error");
     return;
   }

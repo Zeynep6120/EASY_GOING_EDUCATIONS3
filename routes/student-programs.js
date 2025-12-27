@@ -11,7 +11,7 @@ router.get("/student-programs", authenticateToken, requireMinRole("MANAGER"), as
     const query = `
       SELECT 
         sp.student_id,
-        sp.lesson_program_id,
+        sp.course_program_id,
         u.username as student_username,
         u.name as student_name,
         u.surname as student_surname,
@@ -25,9 +25,9 @@ router.get("/student-programs", authenticateToken, requireMinRole("MANAGER"), as
       FROM student_programs sp
       JOIN students s ON s.student_id = sp.student_id
       JOIN users u ON u.user_id = sp.student_id
-      JOIN lesson_programs lp ON lp.lesson_program_id = sp.lesson_program_id
+      JOIN course_programs lp ON lp.course_program_id = sp.course_program_id
       JOIN education_terms et ON et.term_id = lp.education_term_id
-      ORDER BY sp.student_id, sp.lesson_program_id
+      ORDER BY sp.student_id, sp.course_program_id
     `;
     const result = await pool.query(query);
     
@@ -46,9 +46,9 @@ router.get("/student-programs", authenticateToken, requireMinRole("MANAGER"), as
               c.level
             FROM program_lessons pl
             JOIN courses c ON c.course_id = pl.lesson_id
-            WHERE pl.lesson_program_id = $1
+            WHERE pl.course_program_id = $1
           `;
-          const coursesResult = await pool.query(coursesQuery, [row.lesson_program_id]);
+          const coursesResult = await pool.query(coursesQuery, [row.course_program_id]);
           courses = coursesResult.rows;
         } catch (err) {
           // If that fails, try lessons table
@@ -61,9 +61,9 @@ router.get("/student-programs", authenticateToken, requireMinRole("MANAGER"), as
                 l.compulsory
               FROM program_lessons pl
               JOIN lessons l ON l.lesson_id = pl.lesson_id
-              WHERE pl.lesson_program_id = $1
+              WHERE pl.course_program_id = $1
             `;
-            const lessonsResult = await pool.query(lessonsQuery, [row.lesson_program_id]);
+            const lessonsResult = await pool.query(lessonsQuery, [row.course_program_id]);
             courses = lessonsResult.rows.map(l => ({
               course_id: l.course_id,
               course_name: l.course_name,
@@ -95,11 +95,11 @@ router.post("/student-programs", authenticateToken, requireMinRole("MANAGER"), a
   try {
     await client.query("BEGIN");
 
-    const { student_id, lesson_program_id } = req.body;
+    const { student_id, course_program_id } = req.body;
     
-    if (!student_id || !lesson_program_id) {
+    if (!student_id || !course_program_id) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ message: "student_id and lesson_program_id are required" });
+      return res.status(400).json({ message: "student_id and course_program_id are required" });
     }
 
     // Get student information
@@ -118,11 +118,11 @@ router.post("/student-programs", authenticateToken, requireMinRole("MANAGER"), a
     // Get program information
     const programQuery = `
       SELECT lp.day_of_week, lp.start_time, lp.stop_time, et.term_name
-      FROM lesson_programs lp
+      FROM course_programs lp
       LEFT JOIN education_terms et ON lp.education_term_id = et.term_id
-      WHERE lp.lesson_program_id = $1
+      WHERE lp.course_program_id = $1
     `;
-    const programResult = await client.query(programQuery, [lesson_program_id]);
+    const programResult = await client.query(programQuery, [course_program_id]);
     if (programResult.rows.length === 0) {
       await client.query("ROLLBACK");
       return res.status(404).json({ message: "Program not found" });
@@ -137,10 +137,10 @@ router.post("/student-programs", authenticateToken, requireMinRole("MANAGER"), a
         SELECT c.course_id, c.title
         FROM program_lessons pl
         JOIN courses c ON pl.lesson_id = c.course_id
-        WHERE pl.lesson_program_id = $1
+        WHERE pl.course_program_id = $1
         LIMIT 1
       `;
-      const courseResult = await client.query(courseQuery, [lesson_program_id]);
+      const courseResult = await client.query(courseQuery, [course_program_id]);
       if (courseResult.rows.length > 0) {
         courseId = courseResult.rows[0].course_id;
         courseName = courseResult.rows[0].title;
@@ -153,7 +153,7 @@ router.post("/student-programs", authenticateToken, requireMinRole("MANAGER"), a
 
     const query = `
       INSERT INTO student_programs (
-        student_id, lesson_program_id,
+        student_id, course_program_id,
         student_name, student_surname, student_email, student_username,
         program_id, day, time, term,
         course_id, course_name
@@ -163,12 +163,12 @@ router.post("/student-programs", authenticateToken, requireMinRole("MANAGER"), a
     `;
     const result = await client.query(query, [
       student_id,
-      lesson_program_id,
+      course_program_id,
       student.name,
       student.surname,
       student.email,
       student.username,
-      lesson_program_id, // program_id
+      course_program_id, // program_id
       program.day_of_week, // day
       timeStr, // time
       program.term_name || null, // term
@@ -190,24 +190,24 @@ router.post("/student-programs", authenticateToken, requireMinRole("MANAGER"), a
   }
 });
 
-// PUT /api/student-programs/:student_id/:lesson_program_id - Update student-program relationship
-router.put("/student-programs/:student_id/:lesson_program_id", authenticateToken, requireMinRole("MANAGER"), async (req, res) => {
+// PUT /api/student-programs/:student_id/:course_program_id - Update student-program relationship
+router.put("/student-programs/:student_id/:course_program_id", authenticateToken, requireMinRole("MANAGER"), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
     const oldStudentId = Number(req.params.student_id);
-    const oldLessonProgramId = Number(req.params.lesson_program_id);
-    const { student_id: newStudentId, lesson_program_id: newLessonProgramId } = req.body;
+    const oldLessonProgramId = Number(req.params.course_program_id);
+    const { student_id: newStudentId, course_program_id: newLessonProgramId } = req.body;
 
     if (!newStudentId || !newLessonProgramId) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ message: "student_id and lesson_program_id are required" });
+      return res.status(400).json({ message: "student_id and course_program_id are required" });
     }
 
     // Check if old record exists
     const oldRecord = await client.query(
-      "SELECT * FROM student_programs WHERE student_id = $1 AND lesson_program_id = $2",
+      "SELECT * FROM student_programs WHERE student_id = $1 AND course_program_id = $2",
       [oldStudentId, oldLessonProgramId]
     );
     if (oldRecord.rows.length === 0) {
@@ -217,7 +217,7 @@ router.put("/student-programs/:student_id/:lesson_program_id", authenticateToken
 
     // Check if new combination already exists
     const existingRecord = await client.query(
-      "SELECT * FROM student_programs WHERE student_id = $1 AND lesson_program_id = $2",
+      "SELECT * FROM student_programs WHERE student_id = $1 AND course_program_id = $2",
       [newStudentId, newLessonProgramId]
     );
     if (existingRecord.rows.length > 0 && (newStudentId !== oldStudentId || newLessonProgramId !== oldLessonProgramId)) {
@@ -241,9 +241,9 @@ router.put("/student-programs/:student_id/:lesson_program_id", authenticateToken
     // Get new program information
     const programQuery = `
       SELECT lp.day_of_week, lp.start_time, lp.stop_time, et.term_name
-      FROM lesson_programs lp
+      FROM course_programs lp
       LEFT JOIN education_terms et ON lp.education_term_id = et.term_id
-      WHERE lp.lesson_program_id = $1
+      WHERE lp.course_program_id = $1
     `;
     const programResult = await client.query(programQuery, [newLessonProgramId]);
     if (programResult.rows.length === 0) {
@@ -260,7 +260,7 @@ router.put("/student-programs/:student_id/:lesson_program_id", authenticateToken
         SELECT c.course_id, c.title
         FROM program_lessons pl
         JOIN courses c ON pl.lesson_id = c.course_id
-        WHERE pl.lesson_program_id = $1
+        WHERE pl.course_program_id = $1
         LIMIT 1
       `;
       const courseResult = await client.query(courseQuery, [newLessonProgramId]);
@@ -276,14 +276,14 @@ router.put("/student-programs/:student_id/:lesson_program_id", authenticateToken
 
     // Delete old record
     await client.query(
-      "DELETE FROM student_programs WHERE student_id = $1 AND lesson_program_id = $2",
+      "DELETE FROM student_programs WHERE student_id = $1 AND course_program_id = $2",
       [oldStudentId, oldLessonProgramId]
     );
 
     // Insert new record
     const query = `
       INSERT INTO student_programs (
-        student_id, lesson_program_id,
+        student_id, course_program_id,
         student_name, student_surname, student_email, student_username,
         program_id, day, time, term,
         course_id, course_name
@@ -317,18 +317,18 @@ router.put("/student-programs/:student_id/:lesson_program_id", authenticateToken
   }
 });
 
-// DELETE /api/student-programs/:student_id/:lesson_program_id - Delete student-program relationship
-router.delete("/student-programs/:student_id/:lesson_program_id", authenticateToken, requireMinRole("MANAGER"), async (req, res) => {
+// DELETE /api/student-programs/:student_id/:course_program_id - Delete student-program relationship
+router.delete("/student-programs/:student_id/:course_program_id", authenticateToken, requireMinRole("MANAGER"), async (req, res) => {
   try {
     const student_id = Number(req.params.student_id);
-    const lesson_program_id = Number(req.params.lesson_program_id);
+    const course_program_id = Number(req.params.course_program_id);
 
     const query = `
       DELETE FROM student_programs
-      WHERE student_id = $1 AND lesson_program_id = $2
+      WHERE student_id = $1 AND course_program_id = $2
       RETURNING *
     `;
-    const result = await pool.query(query, [student_id, lesson_program_id]);
+    const result = await pool.query(query, [student_id, course_program_id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Not found" });
