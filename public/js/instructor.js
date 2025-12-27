@@ -34,8 +34,9 @@ document.addEventListener("DOMContentLoaded", function() {
 // Load instructors
 async function loadInstructors() {
   try {
+    // Load all instructors without pagination
     const res = await fetch(
-      `${API_BASE}/search?page=${currentPage}&size=${pageSize}&sort=name&type=asc`,
+      `${API_BASE}/getAll`,
       {
         headers: getAuthHeaders(),
       }
@@ -43,14 +44,19 @@ async function loadInstructors() {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({ message: "Failed to load instructors" }));
-      throw new Error(errorData.message || `HTTP ${res.status}: Failed to load instructors`);
+      throw new Error(errorData.message || errorData.error || `HTTP ${res.status}: Failed to load instructors`);
     }
 
     const data = await res.json();
-    console.log("Instructor data received:", data); // Debug log
-    const instructors = data.content || data || [];
-    console.log("Instructors array:", instructors); // Debug log
+    const instructors = Array.isArray(data) ? data : [];
     displayInstructors(instructors);
+    
+    // Clear any previous error messages on success
+    const messageEl = document.getElementById("instructorMessage");
+    if (messageEl && instructors.length > 0) {
+      messageEl.textContent = "";
+      messageEl.className = "message";
+    }
   } catch (error) {
     console.error("Error loading instructors:", error);
     showMessage(
@@ -222,17 +228,23 @@ async function handleSubmit(e) {
 
 // Edit instructor
 async function editInstructor(id) {
+  const messageEl = document.getElementById("instructorMessage");
   try {
+    showMessage(messageEl, "Loading instructor...", "success");
+    
     const res = await fetch(`${API_BASE}/getSavedInstructorById/${id}`, {
       headers: getAuthHeaders(),
     });
 
-    if (!res.ok) throw new Error("Failed to load instructor");
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: "Failed to load instructor" }));
+      throw new Error(errorData.message || errorData.error || `HTTP ${res.status}: Failed to load instructor`);
+    }
 
     const instructor = await res.json();
 
     if (!instructor) {
-      showMessage(document.getElementById("instructorMessage"), "Instructor not found", "error");
+      showMessage(messageEl, "Instructor not found", "error");
       return;
     }
 
@@ -244,7 +256,19 @@ async function editInstructor(id) {
     document.getElementById("instructorSurname").value = instructor.surname || "";
     document.getElementById("instructorEmail").value = instructor.email || "";
     document.getElementById("instructorGender").value = instructor.gender || "";
-    document.getElementById("instructorBirthDate").value = instructor.birth_date || "";
+    
+    // Format birth_date for date input (YYYY-MM-DD)
+    if (instructor.birth_date) {
+      const birthDate = new Date(instructor.birth_date);
+      if (!isNaN(birthDate.getTime())) {
+        document.getElementById("instructorBirthDate").value = birthDate.toISOString().split('T')[0];
+      } else {
+        document.getElementById("instructorBirthDate").value = "";
+      }
+    } else {
+      document.getElementById("instructorBirthDate").value = "";
+    }
+    
     document.getElementById("instructorBirthPlace").value = instructor.birth_place || "";
     document.getElementById("instructorPhone").value = instructor.phone_number || "";
     document.getElementById("instructorSSN").value = instructor.ssn || "";
@@ -252,34 +276,50 @@ async function editInstructor(id) {
     document.getElementById("instructorPassword").required = false;
 
     document.getElementById("instructorModal").style.display = "block";
+    
+    // Clear loading message
+    if (messageEl) {
+      messageEl.textContent = "";
+      messageEl.className = "message";
+    }
   } catch (error) {
     console.error("Error loading instructor:", error);
-    showMessage(document.getElementById("instructorMessage"), "Error loading instructor", "error");
+    showMessage(messageEl, "Error loading instructor: " + error.message, "error");
   }
 }
 
 // Delete instructor
-async function deleteInstructor(id) {
+window.deleteInstructor = async function deleteInstructor(id) {
   if (!confirm("Are you sure you want to delete this instructor?")) {
     return;
   }
 
+  const messageEl = document.getElementById("instructorMessage");
   try {
+    showMessage(messageEl, "Deleting instructor...", "success");
+    
     const res = await fetch(`${API_BASE}/delete/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
 
+    const data = await res.json().catch(() => ({}));
+
     if (res.ok) {
-      showMessage(document.getElementById("instructorMessage"), "Instructor deleted successfully", "success");
-      loadInstructors();
+      showMessage(messageEl, "Instructor deleted successfully", "success");
+      // Reload instructors after a short delay
+      setTimeout(() => {
+        loadInstructors();
+      }, 500);
     } else {
-      const data = await res.json();
-      showMessage(document.getElementById("instructorMessage"), data.message || "Failed to delete instructor", "error");
+      showMessage(messageEl, data.message || data.error || "Failed to delete instructor", "error");
     }
   } catch (error) {
     console.error("Error deleting instructor:", error);
-    showMessage(document.getElementById("instructorMessage"), "Error deleting instructor: " + error.message, "error");
+    showMessage(messageEl, "Error deleting instructor: " + error.message, "error");
   }
 }
+
+// Make editInstructor globally accessible
+window.editInstructor = editInstructor;
 

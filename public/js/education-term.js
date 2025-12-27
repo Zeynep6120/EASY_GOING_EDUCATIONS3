@@ -33,28 +33,66 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // Load education terms
 async function loadTerms() {
+  const messageEl = document.getElementById("termMessage");
   try {
-    const res = await fetch(
-      `${API_BASE}?page=${currentPage}&size=${pageSize}&sort=startDate&type=desc`,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
+    // Check if user is logged in
+    if (!isLoggedIn()) {
+      showMessage(messageEl, "Please login to view education terms", "error");
+      setTimeout(() => {
+        window.location.href = "/index.html";
+      }, 2000);
+      return;
+    }
+
+    const res = await fetch(API_BASE, {
+      headers: getAuthHeaders(),
+    });
 
     if (!res.ok) {
-      throw new Error("Failed to load education terms");
+      // Handle 401 Unauthorized (invalid token)
+      if (res.status === 401) {
+        showMessage(messageEl, "Session expired. Please login again.", "error");
+        setTimeout(() => {
+          logout();
+        }, 2000);
+        return;
+      }
+
+      const errorData = await res.json().catch(() => ({ message: "Failed to load education terms" }));
+      const errorMessage = errorData.message || errorData.error || `HTTP ${res.status}: Failed to load education terms`;
+      throw new Error(errorMessage);
     }
 
     const data = await res.json();
-    const terms = Array.isArray(data) ? data : (data.content || []);
-    displayTerms(terms);
+    const terms = Array.isArray(data) ? data : [];
+    
+    // Sort terms by start_date (newest first)
+    const sortedTerms = [...terms].sort((a, b) => {
+      const dateA = new Date(a.start_date || 0);
+      const dateB = new Date(b.start_date || 0);
+      return dateB - dateA; // Descending order (newest first)
+    });
+    
+    displayTerms(sortedTerms);
+    
+    // Clear any previous error messages on success
+    if (messageEl) {
+      messageEl.textContent = "";
+      messageEl.className = "message";
+    }
   } catch (error) {
     console.error("Error loading education terms:", error);
-    showMessage(
-      document.getElementById("termMessage"),
-      "Error loading education terms: " + error.message,
-      "error"
-    );
+    const errorMessage = error.message || "Failed to load education terms. Please check your permissions and try again.";
+    
+    // Check if it's a token-related error
+    if (errorMessage.toLowerCase().includes("token") || errorMessage.toLowerCase().includes("unauthorized")) {
+      showMessage(messageEl, "Session expired. Please login again.", "error");
+      setTimeout(() => {
+        logout();
+      }, 2000);
+    } else {
+      showMessage(messageEl, errorMessage, "error");
+    }
   }
 }
 
@@ -64,7 +102,7 @@ function displayTerms(terms) {
   if (!tbody) return;
 
   if (terms.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='6'>No education terms found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='5'>No education terms found</td></tr>";
     return;
   }
 
@@ -76,7 +114,6 @@ function displayTerms(terms) {
       <td>${term.term_name || term.termName}</td>
       <td>${term.start_date ? formatDate(term.start_date) : ""}</td>
       <td>${term.end_date ? formatDate(term.end_date) : ""}</td>
-      <td>${term.last_registration_date ? formatDate(term.last_registration_date) : ""}</td>
       <td>
         <button class="btn-small btn-edit" onclick="editTerm(${term.term_id || term.id})">Edit</button>
         <button class="btn-small btn-delete" onclick="deleteTerm(${term.term_id || term.id})">Delete</button>
@@ -143,7 +180,6 @@ async function handleSubmit(e) {
     term_name: document.getElementById("termName").value.trim(),
     start_date: document.getElementById("termStartDate").value,
     end_date: document.getElementById("termEndDate").value,
-    last_registration_date: document.getElementById("termLastRegistrationDate").value || null,
   };
 
   // Validation
@@ -180,16 +216,30 @@ async function handleSubmit(e) {
       });
     }
 
-    const data = await res.json();
+    // Handle 401 Unauthorized (invalid token)
+    if (res.status === 401) {
+      showMessage(messageEl, "Session expired. Please login again.", "error");
+      setTimeout(() => {
+        logout();
+      }, 2000);
+      return;
+    }
+
+    const data = await res.json().catch(() => ({ message: "Unknown error occurred" }));
 
     if (res.ok) {
       showMessage(messageEl, termId ? "Education term updated successfully" : "Education term created successfully", "success");
       document.getElementById("termModal").style.display = "none";
       document.getElementById("termForm").reset();
       document.getElementById("termId").value = "";
-      loadTerms();
+      // Reload terms after a short delay
+      setTimeout(() => {
+        loadTerms();
+      }, 500);
     } else {
-      showMessage(messageEl, data.message || "Operation failed", "error");
+      const errorMessage = data.message || data.error || `HTTP ${res.status}: Operation failed`;
+      console.error("Error response:", { status: res.status, data });
+      showMessage(messageEl, errorMessage, "error");
     }
   } catch (error) {
     console.error("Error saving education term:", error);
@@ -199,17 +249,32 @@ async function handleSubmit(e) {
 
 // Edit education term
 async function editTerm(id) {
+  const messageEl = document.getElementById("termMessage");
   try {
+    showMessage(messageEl, "Loading education term...", "success");
+    
     const res = await fetch(`${API_BASE}/${id}`, {
       headers: getAuthHeaders(),
     });
 
-    if (!res.ok) throw new Error("Failed to load education term");
+    if (!res.ok) {
+      // Handle 401 Unauthorized (invalid token)
+      if (res.status === 401) {
+        showMessage(messageEl, "Session expired. Please login again.", "error");
+        setTimeout(() => {
+          logout();
+        }, 2000);
+        return;
+      }
+
+      const errorData = await res.json().catch(() => ({ message: "Failed to load education term" }));
+      throw new Error(errorData.message || errorData.error || `HTTP ${res.status}: Failed to load education term`);
+    }
 
     const term = await res.json();
 
     if (!term) {
-      showMessage(document.getElementById("termMessage"), "Education term not found", "error");
+      showMessage(messageEl, "Education term not found", "error");
       return;
     }
 
@@ -221,46 +286,82 @@ async function editTerm(id) {
     // Format dates for input fields (YYYY-MM-DD)
     if (term.start_date) {
       const startDate = new Date(term.start_date);
-      document.getElementById("termStartDate").value = startDate.toISOString().split('T')[0];
+      if (!isNaN(startDate.getTime())) {
+        document.getElementById("termStartDate").value = startDate.toISOString().split('T')[0];
+      } else {
+        document.getElementById("termStartDate").value = "";
+      }
+    } else {
+      document.getElementById("termStartDate").value = "";
     }
+    
     if (term.end_date) {
       const endDate = new Date(term.end_date);
-      document.getElementById("termEndDate").value = endDate.toISOString().split('T')[0];
-    }
-    if (term.last_registration_date) {
-      const lastRegDate = new Date(term.last_registration_date);
-      document.getElementById("termLastRegistrationDate").value = lastRegDate.toISOString().split('T')[0];
+      if (!isNaN(endDate.getTime())) {
+        document.getElementById("termEndDate").value = endDate.toISOString().split('T')[0];
+      } else {
+        document.getElementById("termEndDate").value = "";
+      }
+    } else {
+      document.getElementById("termEndDate").value = "";
     }
 
     document.getElementById("termModal").style.display = "block";
+    
+    // Clear loading message
+    if (messageEl) {
+      messageEl.textContent = "";
+      messageEl.className = "message";
+    }
   } catch (error) {
     console.error("Error loading education term:", error);
-    showMessage(document.getElementById("termMessage"), "Error loading education term", "error");
+    showMessage(messageEl, "Error loading education term: " + error.message, "error");
   }
 }
 
-// Delete education term
-async function deleteTerm(id) {
+// Delete education term (make it globally accessible)
+window.deleteTerm = async function deleteTerm(id) {
   if (!confirm("Are you sure you want to delete this education term?")) {
     return;
   }
 
+  const messageEl = document.getElementById("termMessage");
   try {
+    showMessage(messageEl, "Deleting education term...", "success");
+    
     const res = await fetch(`${API_BASE}/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
 
+    // Handle 401 Unauthorized (invalid token)
+    if (res.status === 401) {
+      showMessage(messageEl, "Session expired. Please login again.", "error");
+      setTimeout(() => {
+        logout();
+      }, 2000);
+      return;
+    }
+
+    const data = await res.json().catch(() => ({ message: "Unknown error occurred" }));
+
     if (res.ok) {
-      showMessage(document.getElementById("termMessage"), "Education term deleted successfully", "success");
-      loadTerms();
+      showMessage(messageEl, "Education term deleted successfully", "success");
+      // Reload terms after a short delay
+      setTimeout(() => {
+        loadTerms();
+      }, 500);
     } else {
-      const data = await res.json();
-      showMessage(document.getElementById("termMessage"), data.message || "Failed to delete education term", "error");
+      const errorMessage = data.message || data.error || `HTTP ${res.status}: Failed to delete education term`;
+      console.error("Delete error response:", { status: res.status, data });
+      showMessage(messageEl, errorMessage, "error");
     }
   } catch (error) {
     console.error("Error deleting education term:", error);
-    showMessage(document.getElementById("termMessage"), "Error deleting education term: " + error.message, "error");
+    showMessage(messageEl, "Error deleting education term: " + error.message, "error");
   }
 }
+
+// Make editTerm globally accessible
+window.editTerm = editTerm;
 

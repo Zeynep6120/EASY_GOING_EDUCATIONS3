@@ -4,6 +4,8 @@ const router = express.Router();
 const authenticateToken = require("../middleware/auth");
 const { requireMinRole } = require("../middleware/rbac");
 const EducationTerm = require("../models/EducationTerm");
+const pool = require("../db/connection");
+const pool = require("../db/connection");
 
 // Terms are "master data".
 // Per your hierarchy: only ADMIN + MANAGER can manage (and even view) terms.
@@ -79,11 +81,11 @@ router.put("/terms/:id", authenticateToken, requireMinRole("MANAGER"), async (re
       return res.status(400).json({ message: "term_name, start_date, end_date are required" });
     }
     const updated = await EducationTerm.update(id, { term_name, start_date, end_date });
-    if (!updated) return res.status(404).json({ message: "Not found" });
+    if (!updated) return res.status(404).json({ message: "Education term not found" });
     res.json(updated);
   } catch (e) {
     console.error("PUT /terms/:id error:", e);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: e.message });
   }
 });
 
@@ -91,12 +93,25 @@ router.put("/terms/:id", authenticateToken, requireMinRole("MANAGER"), async (re
 router.delete("/terms/:id", authenticateToken, requireMinRole("MANAGER"), async (req, res) => {
   try {
     const id = Number(req.params.id);
+    
+    // Check if term is referenced by lesson_programs
+    const checkPrograms = await pool.query(
+      "SELECT COUNT(*) as count FROM lesson_programs WHERE education_term_id = $1",
+      [id]
+    );
+    
+    if (parseInt(checkPrograms.rows[0].count) > 0) {
+      return res.status(400).json({ 
+        message: "Cannot delete education term. This term is used by one or more lesson programs. Please remove the programs first." 
+      });
+    }
+    
     const deleted = await EducationTerm.delete(id);
-    if (!deleted) return res.status(404).json({ message: "Not found" });
-    res.json({ message: "Deleted" });
+    if (!deleted) return res.status(404).json({ message: "Education term not found" });
+    res.json({ message: "Deleted successfully" });
   } catch (e) {
     console.error("DELETE /terms/:id error:", e);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: e.message });
   }
 });
 

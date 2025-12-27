@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Education Term Management - Dashboard</title>
+    <title>Slides Management - Dashboard</title>
     <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
     <link rel="stylesheet" href="../css/style.css" />
   </head>
@@ -29,54 +29,54 @@
 
     <div class="container">
       <div class="dashboard-header">
-        <h1>Education Term Management</h1>
+        <h1>Slides Management</h1>
         <a href="/dashboard.html" class="btn-secondary">Back to Dashboard</a>
       </div>
 
       <div class="dashboard-content">
         <div class="dashboard-actions">
-          <button id="addTermBtn" class="btn-primary">Add New Education Term</button>
+          <button id="addSlideBtn" class="btn-primary">Add New Slide</button>
         </div>
 
-        <div id="termTableContainer">
-          <table id="termTable">
+        <div id="slideTableContainer">
+          <table id="slideTable">
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Term Name</th>
-                <th>Start Date</th>
-                <th>End Date</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Image</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="termTableBody">
-              <!-- Education Terms will be loaded here -->
+            <tbody id="slideTableBody">
+              <!-- Slides will be loaded here -->
             </tbody>
           </table>
         </div>
 
-        <div id="termMessage" class="message"></div>
+        <div id="slideMessage" class="message"></div>
       </div>
     </div>
 
-    <!-- Add/Edit Education Term Modal -->
-    <div id="termModal" class="modal" style="display: none">
+    <!-- Add/Edit Slide Modal -->
+    <div id="slideModal" class="modal" style="display: none">
       <div class="modal-content">
         <span class="close">&times;</span>
-        <h2 id="modalTitle">Add Education Term</h2>
-        <form id="termForm">
-          <input type="hidden" id="termId" />
+        <h2 id="modalTitle">Add Slide</h2>
+        <form id="slideForm">
+          <input type="hidden" id="slideId" />
           <div class="form-group">
-            <label for="termName">Term Name *</label>
-            <input type="text" id="termName" required />
+            <label for="slideTitle">Title *</label>
+            <input type="text" id="slideTitle" required />
           </div>
           <div class="form-group">
-            <label for="termStartDate">Start Date *</label>
-            <input type="date" id="termStartDate" required />
+            <label for="slideDescription">Description</label>
+            <textarea id="slideDescription" rows="4"></textarea>
           </div>
           <div class="form-group">
-            <label for="termEndDate">End Date *</label>
-            <input type="date" id="termEndDate" required />
+            <label for="slideImage">Image</label>
+            <input type="text" id="slideImage" placeholder="Image filename (e.g., slide-01.jpg)" />
           </div>
           <div class="form-actions">
             <button type="submit" class="btn-primary">Save</button>
@@ -88,7 +88,7 @@
 
     <script src="../js/utils.js"></script>
     <script src="../js/header.js"></script>
-    <script src="../js/education-term.js"></script>
+    <script src="../js/slides.js"></script>
   </body>
 </html>
 

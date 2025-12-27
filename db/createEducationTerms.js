@@ -47,6 +47,17 @@ const educationTerms = [
     start_date: "2027-01-15",
     end_date: "2027-05-31",
   },
+  // 2027-2028 Academic Year
+  {
+    term_name: "2027-2028 Fall Semester",
+    start_date: "2027-09-01",
+    end_date: "2027-12-31",
+  },
+  {
+    term_name: "2027-2028 Spring Semester",
+    start_date: "2028-01-15",
+    end_date: "2028-05-31",
+  },
   // Summer Terms
   {
     term_name: "2024 Summer Term",
@@ -62,6 +73,11 @@ const educationTerms = [
     term_name: "2026 Summer Term",
     start_date: "2026-06-01",
     end_date: "2026-08-31",
+  },
+  {
+    term_name: "2027 Summer Term",
+    start_date: "2027-06-01",
+    end_date: "2027-08-31",
   },
 ];
 

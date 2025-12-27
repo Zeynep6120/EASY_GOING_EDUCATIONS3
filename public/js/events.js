@@ -1,178 +1,249 @@
-// Events page functionality - Vanilla JavaScript
+// Events Management - Vanilla JavaScript
 
+const API_BASE = "/api/content/events";
+
+// Check authentication and role
+function checkAuth() {
+  if (!requireAuth()) {
+    return false;
+  }
+  const user = getCurrentUser();
+  if (!user || (user.role !== "ADMIN" && user.role !== "MANAGER")) {
+    window.location.href = "/unauthorized.html";
+    return false;
+  }
+  return true;
+}
+
+// Initialize page
 document.addEventListener("DOMContentLoaded", function() {
-  // Initialize header
+  if (!checkAuth()) return;
+  
   if (typeof initHeader === "function") {
     initHeader();
   }
 
-  // Load events
   loadEvents();
+  setupModal();
+  setupForm();
 });
 
-function formatDate(dateString) {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
+// Load events
 async function loadEvents() {
   try {
-    const res = await fetch("/api/content/events");
-    
+    const res = await fetch(API_BASE, {
+      headers: getAuthHeaders(),
+    });
+
     if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-    
-    const events = await res.json();
-    const container = document.getElementById("eventsGrid");
-    if (!container) return;
-
-    if (!events || events.length === 0) {
-      container.innerHTML = "<p class='no-events-message'>No events available at the moment. Please check back later.</p>";
-      return;
+      throw new Error("Failed to load events");
     }
 
-    // Filter and sort events - prioritize upcoming events
-    const now = new Date();
-    const upcomingEvents = events.filter(event => {
-      if (!event.time) return false;
-      return new Date(event.time) >= now;
-    }).sort((a, b) => {
-      if (!a.time) return 1;
-      if (!b.time) return -1;
-      return new Date(a.time) - new Date(b.time);
-    });
-
-    const pastEvents = events.filter(event => {
-      if (!event.time) return false;
-      return new Date(event.time) < now;
-    }).sort((a, b) => {
-      if (!a.time) return 1;
-      if (!b.time) return -1;
-      return new Date(b.time) - new Date(a.time); // Most recent first for past events
-    });
-
-    // Combine: upcoming first, then past
-    const sortedEvents = [...upcomingEvents, ...pastEvents];
-
-    // If no events at all, show message
-    if (sortedEvents.length === 0) {
-      container.innerHTML = "<p class='no-events-message'>No events available at the moment. Please check back later.</p>";
-      return;
-    }
-
-    container.innerHTML = sortedEvents
-      .map(
-        (event) => `
-      <div class="event-card" data-event-id="${event.event_id || event.id || ''}" style="cursor: pointer;">
-        <div class="event-image">
-          <img src="/img/events/${event.image || "events-01.jpg"}" alt="${event.title}" />
-        </div>
-        <div class="event-content">
-          <h3>${event.title}</h3>
-          <div class="event-meta">
-            ${event.time ? `<span>📅 ${formatDate(event.time)}</span>` : ""}
-            ${event.location ? `<span>📍 ${event.location}</span>` : ""}
-          </div>
-        </div>
-      </div>
-    `
-      )
-      .join("");
-
-    // Add click event listeners to event cards
-    const eventCards = container.querySelectorAll(".event-card");
-    eventCards.forEach((card) => {
-      card.addEventListener("click", function() {
-        const eventId = this.getAttribute("data-event-id");
-        handleEventClick(eventId, sortedEvents);
-      });
-    });
+    const data = await res.json();
+    const events = Array.isArray(data) ? data : [];
+    displayEvents(events);
   } catch (error) {
     console.error("Error loading events:", error);
-    const container = document.getElementById("eventsGrid");
-    if (container) {
-      container.innerHTML = `<p class='error-message'>Error loading events. Please try again later.</p>`;
-    }
+    showMessage(
+      document.getElementById("eventMessage"),
+      "Error loading events: " + error.message,
+      "error"
+    );
   }
 }
 
-// Handle event card click
-function handleEventClick(eventId, allEvents) {
-  const event = allEvents.find(e => (e.event_id || e.id) == eventId);
-  if (!event) {
-    console.error("Event not found");
+// Display events in table
+function displayEvents(events) {
+  const tbody = document.getElementById("eventTableBody");
+  if (!tbody) return;
+
+  if (events.length === 0) {
+    tbody.innerHTML = "<tr><td colspan='6'>No events found</td></tr>";
     return;
   }
 
-  // Show event details in a modal
-  showEventDetails(event);
+  tbody.innerHTML = events
+    .map(
+      (event) => `
+    <tr>
+      <td>${event.event_id || event.id}</td>
+      <td>${event.title || ""}</td>
+      <td>${event.time ? formatDate(event.time) : ""}</td>
+      <td>${event.location || ""}</td>
+      <td>${event.image || "-"}</td>
+      <td>
+        <button class="btn-small btn-edit" onclick="editEvent(${event.event_id || event.id})">Edit</button>
+        <button class="btn-small btn-delete" onclick="deleteEvent(${event.event_id || event.id})">Delete</button>
+      </td>
+    </tr>
+  `
+    )
+    .join("");
 }
 
-// Show event details
-function showEventDetails(event) {
-  // Create modal HTML
-  const modal = document.createElement("div");
-  modal.className = "event-modal";
-  modal.innerHTML = `
-    <div class="event-modal-overlay"></div>
-    <div class="event-modal-content">
-      <span class="event-modal-close">&times;</span>
-      <div class="event-modal-image">
-        <img src="/img/events/${event.image || "events-01.jpg"}" alt="${event.title}" />
-      </div>
-      <div class="event-modal-body">
-        <h2>${event.title}</h2>
-        <div class="event-modal-details">
-          ${event.time ? `
-          <div class="event-detail-item">
-            <strong>📅 Date & Time:</strong> ${formatDate(event.time)}
-            ${event.time ? ` at ${new Date(event.time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}` : ""}
-          </div>
-          ` : ""}
-          ${event.location ? `
-          <div class="event-detail-item">
-            <strong>📍 Location:</strong> ${event.location}
-          </div>
-          ` : ""}
-        </div>
-        <div class="event-modal-actions">
-          <button class="btn btn-primary" onclick="closeEventModal()">Close</button>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  
-  // Close button
-  const closeBtn = modal.querySelector(".event-modal-close");
-  const overlay = modal.querySelector(".event-modal-overlay");
-  
-  closeBtn.addEventListener("click", closeEventModal);
-  overlay.addEventListener("click", closeEventModal);
-  
-  // Close on Escape key
-  document.addEventListener("keydown", function(e) {
-    if (e.key === "Escape") {
-      closeEventModal();
+// Setup modal
+function setupModal() {
+  const modal = document.getElementById("eventModal");
+  const closeBtn = document.querySelector(".close");
+  const cancelBtn = document.getElementById("cancelBtn");
+
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      modal.style.display = "none";
+    });
+  }
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      modal.style.display = "none";
+      document.getElementById("eventForm").reset();
+      document.getElementById("eventId").value = "";
+    });
+  }
+
+  window.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.style.display = "none";
     }
   });
 }
 
-// Close event modal
-function closeEventModal() {
-  const modal = document.querySelector(".event-modal");
-  if (modal) {
-    modal.remove();
+// Setup form
+function setupForm() {
+  const addBtn = document.getElementById("addEventBtn");
+  const form = document.getElementById("eventForm");
+
+  if (addBtn) {
+    addBtn.addEventListener("click", () => {
+      document.getElementById("modalTitle").textContent = "Add Event";
+      document.getElementById("eventForm").reset();
+      document.getElementById("eventId").value = "";
+      document.getElementById("eventModal").style.display = "block";
+    });
+  }
+
+  if (form) {
+    form.addEventListener("submit", handleSubmit);
   }
 }
 
-// Make closeEventModal available globally
-window.closeEventModal = closeEventModal;
+// Handle form submit
+async function handleSubmit(e) {
+  e.preventDefault();
+  const messageEl = document.getElementById("eventMessage");
+  const eventId = document.getElementById("eventId").value;
 
+  const formData = {
+    title: document.getElementById("eventTitle").value.trim(),
+    time: document.getElementById("eventTime").value || null,
+    location: document.getElementById("eventLocation").value.trim(),
+    image: document.getElementById("eventImage").value.trim() || null,
+  };
+
+  if (!formData.title || !formData.time || !formData.location) {
+    showMessage(messageEl, "Please fill all required fields", "error");
+    return;
+  }
+
+  try {
+    showMessage(messageEl, eventId ? "Updating event..." : "Creating event...", "success");
+
+    let res;
+    if (eventId) {
+      res = await fetch(`${API_BASE}/${eventId}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(formData),
+      });
+    } else {
+      res = await fetch(API_BASE, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(formData),
+      });
+    }
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      showMessage(messageEl, data.message || data.error || "Operation failed", "error");
+      return;
+    }
+
+    showMessage(messageEl, eventId ? "Event updated successfully" : "Event created successfully", "success");
+    document.getElementById("eventModal").style.display = "none";
+    document.getElementById("eventForm").reset();
+    document.getElementById("eventId").value = "";
+    loadEvents();
+  } catch (error) {
+    console.error("Error saving event:", error);
+    showMessage(messageEl, "Error saving event: " + error.message, "error");
+  }
+}
+
+// Edit event
+async function editEvent(id) {
+  try {
+    const res = await fetch(`${API_BASE}/${id}`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) throw new Error("Failed to load event");
+
+    const event = await res.json();
+
+    if (!event) {
+      showMessage(document.getElementById("eventMessage"), "Event not found", "error");
+      return;
+    }
+
+    document.getElementById("modalTitle").textContent = "Edit Event";
+    document.getElementById("eventId").value = event.event_id || event.id;
+    document.getElementById("eventTitle").value = event.title || "";
+    
+    // Format datetime for datetime-local input
+    if (event.time) {
+      const date = new Date(event.time);
+      const localDateTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 16);
+      document.getElementById("eventTime").value = localDateTime;
+    }
+    
+    document.getElementById("eventLocation").value = event.location || "";
+    document.getElementById("eventImage").value = event.image || "";
+
+    document.getElementById("eventModal").style.display = "block";
+  } catch (error) {
+    console.error("Error loading event:", error);
+    showMessage(document.getElementById("eventMessage"), "Error loading event", "error");
+  }
+}
+
+// Delete event
+window.deleteEvent = async function deleteEvent(id) {
+  if (!confirm("Are you sure you want to delete this event?")) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+
+    if (res.ok) {
+      showMessage(document.getElementById("eventMessage"), "Event deleted successfully", "success");
+      loadEvents();
+    } else {
+      const data = await res.json();
+      showMessage(document.getElementById("eventMessage"), data.message || "Failed to delete event", "error");
+    }
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    showMessage(document.getElementById("eventMessage"), "Error deleting event: " + error.message, "error");
+  }
+}
+
+// Make editEvent globally accessible
+window.editEvent = editEvent;

@@ -9,8 +9,8 @@ function checkAuth() {
     return false;
   }
   const user = getCurrentUser();
-  // ADMIN and INSTRUCTOR can access
-  if (!user || !["ADMIN", "INSTRUCTOR"].includes(user.role)) {
+  // ADMIN, MANAGER and INSTRUCTOR can access
+  if (!user || !["ADMIN", "MANAGER", "INSTRUCTOR"].includes(user.role)) {
     window.location.href = "/unauthorized.html";
     return false;
   }

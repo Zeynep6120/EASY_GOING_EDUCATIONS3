@@ -18,6 +18,8 @@ const lessonsRoutes = require("./routes/lessons");
 const lessonProgramsRoutes = require("./routes/lesson-programs");
 // const studentInfoRoutes = require("./routes/student-info"); // Removed: student_info table merged into students
 const meetsRoutes = require("./routes/meets");
+const instructorProgramsRoutes = require("./routes/instructor-programs");
+const studentProgramsRoutes = require("./routes/student-programs");
 const contentRoutes = require("./routes/content");
 const contactRoutes = require("./routes/contact");
 
@@ -51,6 +53,9 @@ app.use("/api", lessonsRoutes);
 app.use("/api", lessonProgramsRoutes);
 // app.use("/api", studentInfoRoutes); // Removed: student_info table merged into students
 app.use("/api", meetsRoutes);
+// Instructor programs and student programs management
+app.use("/api", instructorProgramsRoutes);
+app.use("/api", studentProgramsRoutes);
 // Public website content management (courses/instructors/events/slides)
 // Public read endpoints are available under /api/content/*
 // Admin-only write endpoints are also under /api/content/*

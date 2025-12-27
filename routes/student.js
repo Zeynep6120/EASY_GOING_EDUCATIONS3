@@ -70,9 +70,11 @@ router.get("/getAll", authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT u.user_id, u.username, u.name, u.surname, u.email,
-              s.student_id, s.father_name, s.mother_name, s.advisor_instructor_id
+              s.student_id, s.father_name, s.mother_name, s.advisor_instructor_id,
+              adv.name AS advisor_name, adv.surname AS advisor_surname
        FROM users u
        LEFT JOIN students s ON s.student_id = u.user_id
+       LEFT JOIN users adv ON adv.user_id = s.advisor_instructor_id
        WHERE u.role = 'STUDENT'
        ORDER BY u.name`
     );

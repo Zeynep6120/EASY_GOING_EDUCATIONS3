@@ -66,11 +66,21 @@ document.addEventListener("DOMContentLoaded", function() {
 // Load advisor instructors for dropdown
 async function loadAdvisorInstructors() {
   try {
+    // Check if user is logged in
+    if (!isLoggedIn()) {
+      return;
+    }
+
     const res = await fetch("/api/advisor-instructor/getAll", {
       headers: getAuthHeaders(),
     });
 
     if (!res.ok) {
+      // Handle 401 Unauthorized (invalid token)
+      if (res.status === 401) {
+        console.error("Invalid token when loading advisor instructors");
+        return;
+      }
       console.error("Failed to load advisor instructors");
       return;
     }
@@ -80,12 +90,14 @@ async function loadAdvisorInstructors() {
     if (!select) return;
 
     select.innerHTML = '<option value="">Select Advisor Instructor</option>';
-    instructors.forEach((instructor) => {
-      const option = document.createElement("option");
-      option.value = instructor.user_id || instructor.instructor_id;
-      option.textContent = `${instructor.name} ${instructor.surname}`;
-      select.appendChild(option);
-    });
+    if (Array.isArray(instructors)) {
+      instructors.forEach((instructor) => {
+        const option = document.createElement("option");
+        option.value = instructor.user_id || instructor.instructor_id;
+        option.textContent = `${instructor.name || ""} ${instructor.surname || ""}`.trim();
+        select.appendChild(option);
+      });
+    }
   } catch (error) {
     console.error("Error loading advisor instructors:", error);
   }
@@ -93,26 +105,53 @@ async function loadAdvisorInstructors() {
 
 // Load students
 async function loadStudents() {
+  const messageEl = document.getElementById("studentMessage");
   try {
+    // Check if user is logged in
+    if (!isLoggedIn()) {
+      showMessage(messageEl, "Please login to view students", "error");
+      setTimeout(() => {
+        window.location.href = "/index.html";
+      }, 2000);
+      return;
+    }
+
+    // Load all students without pagination
     const res = await fetch(
-      `${API_BASE}/search?page=${currentPage}&size=${pageSize}&sort=name&type=asc`,
+      `${API_BASE}/getAll`,
       {
         headers: getAuthHeaders(),
       }
     );
 
     if (!res.ok) {
+      // Handle 401 Unauthorized (invalid token)
+      if (res.status === 401) {
+        showMessage(messageEl, "Session expired. Please login again.", "error");
+        setTimeout(() => {
+          logout();
+        }, 2000);
+        return;
+      }
+
       const errorData = await res.json().catch(() => ({ message: "Unknown error" }));
-      const errorMessage = errorData.message || `HTTP ${res.status}: ${res.statusText}`;
+      const errorMessage = errorData.message || errorData.error || `HTTP ${res.status}: ${res.statusText}`;
       throw new Error(errorMessage);
     }
 
     const data = await res.json();
-    const students = data.content || data || [];
-    displayStudents(students);
+    const students = Array.isArray(data) ? data : [];
+    
+    // Sort students by name
+    const sortedStudents = [...students].sort((a, b) => {
+      const nameA = (a.name || "").toLowerCase();
+      const nameB = (b.name || "").toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+    
+    displayStudents(sortedStudents);
     
     // Clear any previous error messages on success
-    const messageEl = document.getElementById("studentMessage");
     if (messageEl) {
       messageEl.textContent = "";
       messageEl.className = "message";
@@ -120,11 +159,16 @@ async function loadStudents() {
   } catch (error) {
     console.error("Error loading students:", error);
     const errorMessage = error.message || "Failed to load students. Please check your permissions and try again.";
-    showMessage(
-      document.getElementById("studentMessage"),
-      errorMessage,
-      "error"
-    );
+    
+    // Check if it's a token-related error
+    if (errorMessage.toLowerCase().includes("token") || errorMessage.toLowerCase().includes("unauthorized")) {
+      showMessage(messageEl, "Session expired. Please login again.", "error");
+      setTimeout(() => {
+        logout();
+      }, 2000);
+    } else {
+      showMessage(messageEl, errorMessage, "error");
+    }
   }
 }
 

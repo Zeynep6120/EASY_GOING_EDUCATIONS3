@@ -50,7 +50,15 @@ async function loadEducationTerms() {
     if (!select) return;
 
     select.innerHTML = '<option value="">Select Education Term</option>';
-    terms.forEach((term) => {
+    
+    // Sort terms by start_date (newest first - most recent terms at top)
+    const sortedTerms = [...terms].sort((a, b) => {
+      const dateA = new Date(a.start_date || 0);
+      const dateB = new Date(b.start_date || 0);
+      return dateB - dateA; // Descending order (newest first)
+    });
+    
+    sortedTerms.forEach((term) => {
       const option = document.createElement("option");
       option.value = term.term_id || term.id;
       option.textContent = term.term_name || term.termName;

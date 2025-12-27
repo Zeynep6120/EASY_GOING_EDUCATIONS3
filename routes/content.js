@@ -355,8 +355,9 @@ router.get("/slides/:id", async (req, res) => {
   }
 });
 
-// -------------------- ADMIN MANAGE --------------------
+// -------------------- ADMIN/MANAGER MANAGE --------------------
 const adminOnly = [authenticateToken, requireRoles("ADMIN")];
+const adminOrManager = [authenticateToken, requireRoles("ADMIN", "MANAGER")];
 
 // COURSES
 router.post("/courses", ...adminOnly, async (req, res) => {
@@ -422,7 +423,7 @@ router.delete("/instructors/:id", ...adminOnly, async (req, res) => {
 });
 
 // EVENTS
-router.post("/events", ...adminOnly, async (req, res) => {
+router.post("/events", ...adminOrManager, async (req, res) => {
   try {
     const { title, time, location, image } = req.body;
     if (!title) return res.status(400).json({ message: "title is required" });
@@ -433,7 +434,7 @@ router.post("/events", ...adminOnly, async (req, res) => {
   }
 });
 
-router.put("/events/:id", ...adminOnly, async (req, res) => {
+router.put("/events/:id", ...adminOrManager, async (req, res) => {
   try {
     const updated = await Event.update(req.params.id, req.body);
     res.json(updated);
@@ -442,7 +443,7 @@ router.put("/events/:id", ...adminOnly, async (req, res) => {
   }
 });
 
-router.delete("/events/:id", ...adminOnly, async (req, res) => {
+router.delete("/events/:id", ...adminOrManager, async (req, res) => {
   try {
     await Event.delete(req.params.id);
     res.json({ message: "Deleted" });
@@ -452,7 +453,7 @@ router.delete("/events/:id", ...adminOnly, async (req, res) => {
 });
 
 // SLIDES
-router.post("/slides", ...adminOnly, async (req, res) => {
+router.post("/slides", ...adminOrManager, async (req, res) => {
   try {
     const { title, description, image } = req.body;
     if (!title) return res.status(400).json({ message: "title is required" });
@@ -463,7 +464,7 @@ router.post("/slides", ...adminOnly, async (req, res) => {
   }
 });
 
-router.put("/slides/:id", ...adminOnly, async (req, res) => {
+router.put("/slides/:id", ...adminOrManager, async (req, res) => {
   try {
     const updated = await Slide.update(req.params.id, req.body);
     res.json(updated);
@@ -472,7 +473,7 @@ router.put("/slides/:id", ...adminOnly, async (req, res) => {
   }
 });
 
-router.delete("/slides/:id", ...adminOnly, async (req, res) => {
+router.delete("/slides/:id", ...adminOrManager, async (req, res) => {
   try {
     await Slide.delete(req.params.id);
     res.json({ message: "Deleted" });

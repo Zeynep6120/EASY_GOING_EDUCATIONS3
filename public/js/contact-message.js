@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
   loadContactMessages();
   setupModal();
+  setupDeleteModal();
 });
 
 // Load contact messages
@@ -195,12 +196,64 @@ window.viewMessage = async function viewMessage(id) {
   }
 }
 
+// Store the message ID to delete
+let messageIdToDelete = null;
+
+// Setup delete confirmation modal
+function setupDeleteModal() {
+  const modal = document.getElementById("deleteConfirmModal");
+  if (!modal) return;
+  
+  const cancelBtn = document.getElementById("cancelDeleteBtn");
+  const confirmBtn = document.getElementById("confirmDeleteBtn");
+  
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      modal.style.display = "none";
+      messageIdToDelete = null;
+    });
+  }
+  
+  if (confirmBtn) {
+    confirmBtn.addEventListener("click", () => {
+      if (messageIdToDelete) {
+        modal.style.display = "none";
+        const id = messageIdToDelete;
+        messageIdToDelete = null;
+        performDelete(id);
+      }
+    });
+  }
+  
+  // Close on backdrop click
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.style.display = "none";
+      messageIdToDelete = null;
+    }
+  });
+}
+
 // Delete message (make it globally accessible)
-window.deleteMessage = async function deleteMessage(id) {
-  if (!confirm("Are you sure you want to delete this message?")) {
+window.deleteMessage = function deleteMessage(id) {
+  const modal = document.getElementById("deleteConfirmModal");
+  
+  if (!modal) {
+    // Fallback to confirm if modal doesn't exist
+    if (!confirm("Are you sure you want to delete this message?")) {
+      return;
+    }
+    performDelete(id);
     return;
   }
+  
+  // Store the ID and show modal
+  messageIdToDelete = id;
+  modal.style.display = "flex";
+}
 
+// Perform the actual delete operation
+async function performDelete(id) {
   try {
     console.log("Deleting message with ID:", id);
     const res = await fetch(`${API_BASE}/delete/${id}`, {

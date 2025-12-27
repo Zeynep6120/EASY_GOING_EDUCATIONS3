@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Education Term Management - Dashboard</title>
+    <title>Events Management - Dashboard</title>
     <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
     <link rel="stylesheet" href="../css/style.css" />
   </head>
@@ -29,54 +29,59 @@
 
     <div class="container">
       <div class="dashboard-header">
-        <h1>Education Term Management</h1>
+        <h1>Events Management</h1>
         <a href="/dashboard.html" class="btn-secondary">Back to Dashboard</a>
       </div>
 
       <div class="dashboard-content">
         <div class="dashboard-actions">
-          <button id="addTermBtn" class="btn-primary">Add New Education Term</button>
+          <button id="addEventBtn" class="btn-primary">Add New Event</button>
         </div>
 
-        <div id="termTableContainer">
-          <table id="termTable">
+        <div id="eventTableContainer">
+          <table id="eventTable">
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Term Name</th>
-                <th>Start Date</th>
-                <th>End Date</th>
+                <th>Title</th>
+                <th>Time</th>
+                <th>Location</th>
+                <th>Image</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="termTableBody">
-              <!-- Education Terms will be loaded here -->
+            <tbody id="eventTableBody">
+              <!-- Events will be loaded here -->
             </tbody>
           </table>
         </div>
 
-        <div id="termMessage" class="message"></div>
+        <div id="eventMessage" class="message"></div>
       </div>
     </div>
 
-    <!-- Add/Edit Education Term Modal -->
-    <div id="termModal" class="modal" style="display: none">
+    <!-- Add/Edit Event Modal -->
+    <div id="eventModal" class="modal" style="display: none">
       <div class="modal-content">
         <span class="close">&times;</span>
-        <h2 id="modalTitle">Add Education Term</h2>
-        <form id="termForm">
-          <input type="hidden" id="termId" />
+        <h2 id="modalTitle">Add Event</h2>
+        <form id="eventForm">
+          <input type="hidden" id="eventId" />
           <div class="form-group">
-            <label for="termName">Term Name *</label>
-            <input type="text" id="termName" required />
+            <label for="eventTitle">Title *</label>
+            <input type="text" id="eventTitle" required />
           </div>
           <div class="form-group">
-            <label for="termStartDate">Start Date *</label>
-            <input type="date" id="termStartDate" required />
+            <label for="eventTime">Time *</label>
+            <input type="datetime-local" id="eventTime" required />
           </div>
           <div class="form-group">
-            <label for="termEndDate">End Date *</label>
-            <input type="date" id="termEndDate" required />
+            <label for="eventLocation">Location *</label>
+            <input type="text" id="eventLocation" required />
+          </div>
+          <div class="form-group">
+            <label for="eventImage">Image</label>
+            <input type="text" id="eventImage" placeholder="Image filename (e.g., event-01.jpg)" />
           </div>
           <div class="form-actions">
             <button type="submit" class="btn-primary">Save</button>
@@ -88,7 +93,7 @@
 
     <script src="../js/utils.js"></script>
     <script src="../js/header.js"></script>
-    <script src="../js/education-term.js"></script>
+    <script src="../js/events.js"></script>
   </body>
 </html>
 

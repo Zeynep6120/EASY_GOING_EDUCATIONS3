@@ -76,11 +76,11 @@ router.get("/meets/:id", authenticateToken, async (req, res) => {
 });
 
 // POST /meets
-// Only: ADMIN, INSTRUCTOR
+// Only: ADMIN, MANAGER, INSTRUCTOR
 // Body: { date, start_time, stop_time, description, instructor_id? }
 // - Instructor creates under own id
-// - Admin can set instructor_id
-router.post("/meets", authenticateToken, requireRoles("ADMIN", "INSTRUCTOR"), async (req, res) => {
+// - Admin/Manager can set instructor_id
+router.post("/meets", authenticateToken, requireRoles("ADMIN", "MANAGER", "INSTRUCTOR"), async (req, res) => {
   try {
     const role = normalizeRole(req.user.role);
     const { date, start_time, stop_time, description, instructor_id } = req.body || {};
@@ -89,7 +89,7 @@ router.post("/meets", authenticateToken, requireRoles("ADMIN", "INSTRUCTOR"), as
       return res.status(400).json({ message: "date, start_time, stop_time are required" });
     }
 
-    const iid = role === "ADMIN" ? Number(instructor_id || req.user.id) : Number(req.user.id);
+    const iid = (role === "ADMIN" || role === "MANAGER") ? Number(instructor_id || req.user.id) : Number(req.user.id);
 
     const created = await Meet.create({
       instructor_id: iid,
@@ -107,8 +107,8 @@ router.post("/meets", authenticateToken, requireRoles("ADMIN", "INSTRUCTOR"), as
 });
 
 // PUT /meets/:id
-// Only: ADMIN, INSTRUCTOR (instructor must own)
-router.put("/meets/:id", authenticateToken, requireRoles("ADMIN", "INSTRUCTOR"), async (req, res) => {
+// Only: ADMIN, MANAGER, INSTRUCTOR (instructor must own)
+router.put("/meets/:id", authenticateToken, requireRoles("ADMIN", "MANAGER", "INSTRUCTOR"), async (req, res) => {
   try {
     const meetId = Number(req.params.id);
     const role = normalizeRole(req.user.role);
@@ -135,8 +135,8 @@ router.put("/meets/:id", authenticateToken, requireRoles("ADMIN", "INSTRUCTOR"),
 });
 
 // DELETE /meets/:id
-// Only: ADMIN (for audit/control purposes)
-router.delete("/meets/:id", authenticateToken, requireRoles("ADMIN"), async (req, res) => {
+// Only: ADMIN, MANAGER (for audit/control purposes)
+router.delete("/meets/:id", authenticateToken, requireRoles("ADMIN", "MANAGER"), async (req, res) => {
   try {
     const meetId = Number(req.params.id);
     const deleted = await Meet.delete(meetId);
