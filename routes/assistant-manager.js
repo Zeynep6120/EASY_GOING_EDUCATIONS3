@@ -386,10 +386,10 @@ router.delete("/delete/:id", authenticateToken, requireMinRole("ASSISTANT_MANAGE
     const userRole = (req.user?.role || '').toUpperCase();
     const { id } = req.params;
 
-    // Only ADMIN can delete assistant managers, ASSISTANT_MANAGER cannot delete anyone (including themselves)
+    // Only ADMIN and MANAGER can delete assistant managers, ASSISTANT_MANAGER cannot delete anyone (including themselves)
     if (userRole === "ASSISTANT_MANAGER") {
       await client.query("ROLLBACK");
-      return res.status(403).json({ message: "Forbidden: Only ADMIN can delete assistant managers" });
+      return res.status(403).json({ message: "Forbidden: Only ADMIN and MANAGER can delete assistant managers" });
     }
 
     // Check if assistant manager exists

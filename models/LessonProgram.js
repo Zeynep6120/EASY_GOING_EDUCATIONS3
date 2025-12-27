@@ -43,7 +43,15 @@ class LessonProgram {
   // Programs assigned to an instructor
   static async getByInstructor(instructorId) {
     const query = `
-      SELECT lp.*, et.term_name
+      SELECT 
+        lp.course_program_id,
+        lp.day_of_week,
+        lp.start_time,
+        lp.stop_time,
+        lp.education_term_id,
+        et.term_name,
+        COALESCE(ip.course_id, lp.course_id) as course_id,
+        COALESCE(ip.course_name, lp.course_name) as course_name
       FROM course_programs lp
       JOIN education_terms et ON lp.education_term_id = et.term_id
       JOIN instructor_programs ip ON ip.course_program_id = lp.course_program_id
@@ -104,6 +112,12 @@ class LessonProgram {
   static async isStudentEnrolled(programId, studentId) {
     const q = `SELECT 1 FROM student_programs WHERE course_program_id = $1 AND student_id = $2`;
     const r = await pool.query(q, [programId, studentId]);
+    return r.rowCount > 0;
+  }
+
+  static async isInstructorAssigned(programId, instructorId) {
+    const q = `SELECT 1 FROM instructor_programs WHERE course_program_id = $1 AND instructor_id = $2`;
+    const r = await pool.query(q, [programId, instructorId]);
     return r.rowCount > 0;
   }
 
@@ -247,24 +261,79 @@ class LessonProgram {
   }
 
   static async getCourses(programId) {
-    // Try program_lessons first (current system)
+    // First, try to get course from instructor_programs table (primary source for instructor's programs)
     let query = `
-      SELECT c.course_id, c.title as course_name, c.title, c.description, c.duration, c.level
-      FROM courses c
-      JOIN program_lessons pl ON c.course_id = pl.lesson_id
-      WHERE pl.course_program_id = $1
+      SELECT 
+        ip.course_id,
+        ip.course_name as title,
+        ip.course_name,
+        c.description,
+        c.duration,
+        c.level
+      FROM instructor_programs ip
+      LEFT JOIN courses c ON c.course_id = ip.course_id
+      WHERE ip.course_program_id = $1 AND ip.course_id IS NOT NULL
     `;
     let result = await pool.query(query, [programId]);
     
-    // If no results from program_lessons, try program_courses (backward compatibility)
+    // If no results from instructor_programs, try course_programs table
     if (result.rows.length === 0) {
       query = `
-        SELECT c.course_id, c.title as course_name, c.title, c.description, c.duration, c.level
-        FROM courses c
-        JOIN program_courses pc ON c.course_id = pc.course_id
-        WHERE pc.course_program_id = $1
+        SELECT 
+          cp.course_id,
+          cp.course_name as title,
+          cp.course_name,
+          c.description,
+          c.duration,
+          c.level
+        FROM course_programs cp
+        LEFT JOIN courses c ON c.course_id = cp.course_id
+        WHERE cp.course_program_id = $1 AND cp.course_id IS NOT NULL
       `;
       result = await pool.query(query, [programId]);
+    }
+    
+    // If still no results, try program_lessons (if it exists)
+    if (result.rows.length === 0) {
+      // Check if program_lessons table exists
+      const tableCheck = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'program_lessons'
+        )
+      `);
+      
+      if (tableCheck.rows[0].exists) {
+        query = `
+          SELECT c.course_id, c.title as course_name, c.title, c.description, c.duration, c.level
+          FROM courses c
+          JOIN program_lessons pl ON c.course_id = pl.lesson_id
+          WHERE pl.course_program_id = $1
+        `;
+        result = await pool.query(query, [programId]);
+      }
+    }
+    
+    // If still no results, try program_courses (backward compatibility)
+    if (result.rows.length === 0) {
+      const tableCheck = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'program_courses'
+        )
+      `);
+      
+      if (tableCheck.rows[0].exists) {
+        query = `
+          SELECT c.course_id, c.title as course_name, c.title, c.description, c.duration, c.level
+          FROM courses c
+          JOIN program_courses pc ON c.course_id = pc.course_id
+          WHERE pc.course_program_id = $1
+        `;
+        result = await pool.query(query, [programId]);
+      }
     }
     
     return result.rows;
@@ -326,10 +395,18 @@ class LessonProgram {
 
   static async getStudents(programId) {
     const query = `
-      SELECT u.*
+      SELECT 
+        u.*,
+        s.name,
+        s.surname,
+        s.student_id,
+        CONCAT(s.name, ' ', s.surname) as student_name,
+        CONCAT(s.name, ' ', s.surname) as full_name
       FROM users u
       JOIN student_programs sp ON u.user_id = sp.student_id
+      LEFT JOIN students s ON s.student_id = u.user_id
       WHERE sp.course_program_id = $1
+      ORDER BY s.name, s.surname
     `;
     const result = await pool.query(query, [programId]);
     return result.rows;

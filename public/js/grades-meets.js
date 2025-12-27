@@ -1,9 +1,6 @@
-// Grades & Meets - Student functionality
+// My Meets - Student functionality
 
-// const STUDENT_INFO_API = "/api/student-info"; // Removed: student_info table merged into students
 const MEETS_API = "/api/meets";
-
-let currentTab = "grades";
 
 // Check authentication and role
 function checkAuth() {
@@ -18,45 +15,6 @@ function checkAuth() {
   return true;
 }
 
-// Tab switching
-window.showTab = function(tabName) {
-  currentTab = tabName;
-  
-  // Update tab buttons
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.classList.remove("active");
-    if ((tabName === "grades" && btn.textContent.includes("Grades")) || 
-        (tabName === "meets" && btn.textContent.includes("Meets"))) {
-      btn.classList.add("active");
-    }
-  });
-  
-  // Show/hide tab content
-  const gradesTab = document.getElementById("gradesTab");
-  const meetsTab = document.getElementById("meetsTab");
-  
-  if (gradesTab && meetsTab) {
-    if (tabName === "grades") {
-      gradesTab.style.display = "block";
-      gradesTab.classList.add("active");
-      meetsTab.style.display = "none";
-      meetsTab.classList.remove("active");
-    } else {
-      gradesTab.style.display = "none";
-      gradesTab.classList.remove("active");
-      meetsTab.style.display = "block";
-      meetsTab.classList.add("active");
-    }
-  }
-  
-  // Load data for active tab
-  if (tabName === "meets") {
-    loadMeets();
-  } else {
-    loadGrades();
-  }
-};
-
 // Initialize page
 document.addEventListener("DOMContentLoaded", function() {
   if (!checkAuth()) return;
@@ -65,230 +23,19 @@ document.addEventListener("DOMContentLoaded", function() {
     initHeader();
   }
 
-  // Load terms first, then grades
-  loadTerms().then(() => {
-    loadGrades();
-  }).catch((error) => {
-    console.error("Error initializing page:", error);
-    loadGrades(); // Still try to load grades even if terms fail
-  });
-  
+  loadMeets();
   setupEventListeners();
 });
 
 // Setup event listeners
 function setupEventListeners() {
-  const refreshGradesBtn = document.getElementById("refreshGradesBtn");
   const refreshMeetsBtn = document.getElementById("refreshMeetsBtn");
-  const termFilterGrades = document.getElementById("termFilterGrades");
-
-  if (refreshGradesBtn) {
-    refreshGradesBtn.addEventListener("click", () => {
-      loadGrades();
-    });
-  }
 
   if (refreshMeetsBtn) {
     refreshMeetsBtn.addEventListener("click", () => {
       loadMeets();
     });
   }
-
-  if (termFilterGrades) {
-    termFilterGrades.addEventListener("change", () => {
-      loadGrades();
-    });
-  }
-}
-
-// Load education terms for filter
-async function loadTerms() {
-  try {
-    const res = await fetch("/api/terms", {
-      headers: getAuthHeaders(),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({ message: "Unknown error" }));
-      console.error("Failed to load terms:", res.status, errorData);
-      showMessage(
-        document.getElementById("gradesMessage"),
-        "Failed to load terms. Please refresh the page.",
-        "error"
-      );
-      return;
-    }
-
-    const terms = await res.json();
-    const select = document.getElementById("termFilterGrades");
-    if (!select) {
-      console.error("Term filter select element not found");
-      return;
-    }
-
-    if (!Array.isArray(terms) || terms.length === 0) {
-      console.warn("No terms found in database");
-      select.innerHTML = '<option value="">No Terms Available</option>';
-      showMessage(
-        document.getElementById("gradesMessage"),
-        "No education terms found. Please contact administrator.",
-        "error"
-      );
-      return;
-    }
-
-    const currentValue = select.value;
-    select.innerHTML = '<option value="">All Terms</option>';
-    
-    // Sort terms by start_date (newest first)
-    const sortedTerms = [...terms].sort((a, b) => {
-      const dateA = new Date(a.start_date || 0);
-      const dateB = new Date(b.start_date || 0);
-      return dateB - dateA;
-    });
-    
-    sortedTerms.forEach((term) => {
-      const option = document.createElement("option");
-      option.value = term.term_id;
-      option.textContent = term.term_name || `Term ${term.term_id}`;
-      select.appendChild(option);
-    });
-    
-    if (currentValue) {
-      select.value = currentValue;
-    }
-    
-    console.log(`Loaded ${sortedTerms.length} education terms`);
-  } catch (error) {
-    console.error("Error loading terms:", error);
-    showMessage(
-      document.getElementById("gradesMessage"),
-      "Error loading terms: " + error.message,
-      "error"
-    );
-  }
-}
-
-// Load grades (student info)
-// NOTE: student_info table has been removed, grades functionality is disabled
-async function loadGrades() {
-  try {
-    // student_info table has been merged into students table
-    // Grades functionality is currently disabled
-    const tbody = document.getElementById("gradesTableBody");
-    if (tbody) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" class="no-data-cell">
-            <div class="no-data-message">
-              <span class="no-data-icon">📊</span>
-              <p>Grades functionality is currently unavailable</p>
-              <small>The student_info table has been removed. Grades are now stored in the students table.</small>
-            </div>
-          </td>
-        </tr>
-      `;
-    }
-  } catch (error) {
-    console.error("Error loading grades:", error);
-    showMessage(
-      document.getElementById("gradesMessage"),
-      "Error loading grades: " + error.message,
-      "error"
-    );
-  }
-}
-
-// Display grades in table
-function displayGrades(grades) {
-  const tbody = document.getElementById("gradesTableBody");
-  const messageEl = document.getElementById("gradesMessage");
-  if (!tbody) return;
-
-  if (grades.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7" class="no-data-cell">
-          <div class="no-data-message">
-            <span class="no-data-icon">📊</span>
-            <p>No grades found</p>
-            <small>Your grades will appear here once they are entered by your instructors.</small>
-          </div>
-        </td>
-      </tr>
-    `;
-    if (messageEl) {
-      messageEl.textContent = "";
-      messageEl.className = "message";
-    }
-    return;
-  }
-
-  // Clear any previous messages
-  if (messageEl) {
-    messageEl.textContent = "";
-    messageEl.className = "message";
-  }
-
-  tbody.innerHTML = grades
-    .map(
-      (grade) => {
-        const average = grade.average !== null && grade.average !== undefined ? parseFloat(grade.average).toFixed(2) : "-";
-        const midterm = grade.midterm_exam !== null && grade.midterm_exam !== undefined ? grade.midterm_exam : "-";
-        const final = grade.final_exam !== null && grade.final_exam !== undefined ? grade.final_exam : "-";
-        const note = grade.note || "-";
-        const averageColor = getAverageColor(grade.average);
-        const noteColor = getNoteColor(grade.note);
-        
-        return `
-    <tr class="grade-row">
-      <td class="grade-cell lesson-cell">
-        <div class="lesson-info">
-          <span class="lesson-icon">📚</span>
-          <span class="lesson-name">${grade.lesson_name || "N/A"}</span>
-        </div>
-      </td>
-      <td class="grade-cell term-cell">${grade.term_name || "N/A"}</td>
-      <td class="grade-cell number-cell">
-        <span class="number-badge ${grade.absentee > 5 ? 'warning' : ''}">${grade.absentee || 0}</span>
-      </td>
-      <td class="grade-cell number-cell">${midterm}</td>
-      <td class="grade-cell number-cell">${final}</td>
-      <td class="grade-cell number-cell">
-        <span class="average-badge" style="background: ${averageColor}20; color: ${averageColor}; border-color: ${averageColor};">
-          ${average}
-        </span>
-      </td>
-      <td class="grade-cell note-cell">
-        <span class="note-badge" style="background: ${noteColor}20; color: ${noteColor}; border-color: ${noteColor};">
-          ${note}
-        </span>
-      </td>
-    </tr>
-  `;
-      }
-    )
-    .join("");
-}
-
-// Get color for average
-function getAverageColor(average) {
-  if (average === null || average === undefined) return "#666";
-  if (average >= 90) return "#28a745";
-  if (average >= 80) return "#17a2b8";
-  if (average >= 70) return "#ffc107";
-  if (average >= 60) return "#fd7e14";
-  return "#dc3545";
-}
-
-// Get color for note
-function getNoteColor(note) {
-  if (!note) return "#666";
-  const noteUpper = note.toUpperCase();
-  if (noteUpper === "AA" || noteUpper === "BA" || noteUpper === "BB") return "#28a745";
-  if (noteUpper === "CB" || noteUpper === "CC") return "#ffc107";
-  if (noteUpper === "DC" || noteUpper === "DD") return "#fd7e14";
-  return "#dc3545";
 }
 
 // Load meets
@@ -395,4 +142,3 @@ function displayMeets(meets) {
     )
     .join("");
 }
-

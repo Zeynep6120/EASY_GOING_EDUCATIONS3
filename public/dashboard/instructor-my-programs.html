@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Meets - Dashboard</title>
+    <title>My Programs - Instructor Dashboard</title>
     <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
     <link rel="stylesheet" href="../css/style.css" />
     <link rel="stylesheet" href="../css/dashboard.css" />
@@ -30,26 +30,46 @@
 
     <div class="container">
       <div class="dashboard-header">
-        <h1>My Meets</h1>
+        <h1>My Programs</h1>
         <a href="/dashboard.html" class="btn-secondary">Back to Dashboard</a>
       </div>
 
       <div class="dashboard-content">
-        <!-- Meets Section -->
         <div class="dashboard-actions" style="margin-bottom: 2rem;">
-          <button id="refreshMeetsBtn" class="btn-primary">Refresh</button>
+          <div class="form-group" style="display: inline-block; margin-right: 1rem;">
+            <label for="termFilter">Filter by Term:</label>
+            <select id="termFilter" style="padding: 0.5rem; margin-left: 0.5rem;">
+              <option value="">All Terms</option>
+              <!-- Terms will be loaded here -->
+            </select>
+          </div>
+          <button id="refreshBtn" class="btn-primary">Refresh</button>
         </div>
 
-        <div id="meetsMessage" class="message"></div>
-        <div id="meetsList" class="meets-grid">
-          <!-- Meets will be loaded here -->
+        <div id="programTableContainer">
+          <table id="programTable">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Time</th>
+                <th>Education Term</th>
+                <th>Courses/Lessons</th>
+                <th>Students</th>
+              </tr>
+            </thead>
+            <tbody id="programTableBody">
+              <!-- Programs will be loaded here -->
+            </tbody>
+          </table>
         </div>
+
+        <div id="programMessage" class="message"></div>
       </div>
     </div>
 
     <script src="../js/utils.js"></script>
     <script src="../js/header.js"></script>
-    <script src="../js/grades-meets.js"></script>
+    <script src="../js/instructor-my-programs.js"></script>
   </body>
 </html>
 

@@ -174,8 +174,14 @@ router.get("/lesson-programs/:id", authenticateToken, async (req, res) => {
 router.get("/lesson-programs/:id/courses", authenticateToken, async (req, res) => {
   try {
     const programId = Number(req.params.id);
-    const ok = await canAccessProgram(programId, req.user);
-    if (!ok) return res.status(403).json({ message: "Forbidden" });
+    const role = normalizeRole(req.user.role);
+    
+    // STUDENT can view courses for any program (for enrollment purposes)
+    // Other roles need proper access
+    if (role !== "STUDENT") {
+      const ok = await canAccessProgram(programId, req.user);
+      if (!ok) return res.status(403).json({ message: "Forbidden" });
+    }
 
     const rows = await LessonProgram.getCourses(programId);
     res.json(rows);
@@ -189,8 +195,14 @@ router.get("/lesson-programs/:id/courses", authenticateToken, async (req, res) =
 router.get("/lesson-programs/:id/lessons", authenticateToken, async (req, res) => {
   try {
     const programId = Number(req.params.id);
-    const ok = await canAccessProgram(programId, req.user);
-    if (!ok) return res.status(403).json({ message: "Forbidden" });
+    const role = normalizeRole(req.user.role);
+    
+    // STUDENT can view courses for any program (for enrollment purposes)
+    // Other roles need proper access
+    if (role !== "STUDENT") {
+      const ok = await canAccessProgram(programId, req.user);
+      if (!ok) return res.status(403).json({ message: "Forbidden" });
+    }
 
     const rows = await LessonProgram.getCourses(programId);
     res.json(rows);
@@ -269,8 +281,14 @@ router.delete("/lesson-programs/:id/lessons/:lessonId", authenticateToken, requi
 router.get("/lesson-programs/:id/instructors", authenticateToken, async (req, res) => {
   try {
     const programId = Number(req.params.id);
-    const ok = await canAccessProgram(programId, req.user);
-    if (!ok) return res.status(403).json({ message: "Forbidden" });
+    const role = normalizeRole(req.user.role);
+    
+    // STUDENT can view instructors for any program (for enrollment purposes)
+    // Other roles need proper access
+    if (role !== "STUDENT") {
+      const ok = await canAccessProgram(programId, req.user);
+      if (!ok) return res.status(403).json({ message: "Forbidden" });
+    }
 
     const rows = await LessonProgram.getInstructors(programId);
     res.json(rows);

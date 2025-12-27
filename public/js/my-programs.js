@@ -117,14 +117,14 @@ async function displayPrograms(programs) {
   if (!tbody) return;
 
   if (programs.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='5'>No programs found. You are not enrolled in any programs yet.</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='6'>No programs found. You are not enrolled in any programs yet.</td></tr>";
     return;
   }
 
   // Load courses/lessons and instructors for each program
   const programsWithDetails = await Promise.all(
     programs.map(async (program) => {
-      const programId = program.id || program.lesson_program_id;
+      const programId = program.id || program.course_program_id || program.lesson_program_id;
       let courses = [];
       let instructors = [];
 
@@ -216,6 +216,10 @@ async function displayPrograms(programs) {
             .join(", ");
         }
 
+        const programId = program.id || program.course_program_id || program.lesson_program_id;
+        const currentUser = getCurrentUser();
+        const studentId = currentUser?.id || currentUser?.user_id;
+
         return `
     <tr>
       <td>${day}</td>
@@ -223,10 +227,45 @@ async function displayPrograms(programs) {
       <td>${termName}</td>
       <td>${coursesText}</td>
       <td>${instructorsText}</td>
+      <td>
+        <button class="btn-small btn-delete" onclick="unenrollFromProgram(${studentId}, ${programId})" title="Unenroll from this program">Unenroll</button>
+      </td>
     </tr>
   `;
       }
     )
     .join("");
+}
+
+// Unenroll from a program
+async function unenrollFromProgram(studentId, courseProgramId) {
+  if (!confirm("Are you sure you want to unenroll from this program?")) {
+    return;
+  }
+
+  const messageEl = document.getElementById("programMessage");
+  try {
+    showMessage(messageEl, "Unenrolling from program...", "success");
+
+    const res = await fetch(`/api/student-programs/${studentId}/${courseProgramId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: "Failed to unenroll" }));
+      throw new Error(errorData.message || `HTTP ${res.status}: Failed to unenroll`);
+    }
+
+    showMessage(messageEl, "Successfully unenrolled from program", "success");
+    
+    // Reload programs after a short delay
+    setTimeout(() => {
+      loadPrograms();
+    }, 1000);
+  } catch (error) {
+    console.error("Error unenrolling from program:", error);
+    showMessage(messageEl, "Error: " + error.message, "error");
+  }
 }
 

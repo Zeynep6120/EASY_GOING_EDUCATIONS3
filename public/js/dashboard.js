@@ -43,6 +43,7 @@ const dashboardRoutes = {
     { name: "Contact Messages", url: "/dashboard/contact-message.html" },
   ],
   INSTRUCTOR: [
+    { name: "My Programs", url: "/dashboard/instructor-my-programs.html" },
     { name: "Student", url: "/dashboard/student.html" },
     { name: "Meet Management", url: "/dashboard/meet.html" },
   ],

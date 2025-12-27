@@ -27,10 +27,10 @@ document.addEventListener("DOMContentLoaded", function() {
     initHeader();
   }
 
-  // Hide "Add New Assistant Manager" button if user is not ADMIN
+  // Hide "Add New Assistant Manager" button if user is not ADMIN or MANAGER
   const currentUser = getCurrentUser();
   const addAssistantManagerBtn = document.getElementById("addAssistantManagerBtn");
-  if (addAssistantManagerBtn && currentUser && currentUser.role !== "ADMIN") {
+  if (addAssistantManagerBtn && currentUser && currentUser.role !== "ADMIN" && currentUser.role !== "MANAGER") {
     addAssistantManagerBtn.style.display = "none";
   }
 
@@ -76,6 +76,8 @@ function displayAssistantManagers(assistantManagers) {
 
   const currentUser = getCurrentUser();
   const isAdmin = currentUser && currentUser.role === "ADMIN";
+  const isManager = currentUser && currentUser.role === "MANAGER";
+  const canEditDelete = isAdmin || isManager; // ADMIN and MANAGER can edit/delete
 
   if (assistantManagers.length === 0) {
     tbody.innerHTML = "<tr><td colspan='7'>No assistant managers found</td></tr>";
@@ -86,8 +88,8 @@ function displayAssistantManagers(assistantManagers) {
     .map(
       (assistantManager, index) => {
         const isOwnData = currentUser && (currentUser.id === assistantManager.user_id || currentUser.user_id === assistantManager.user_id);
-        // Only show edit/delete buttons if it's own data or user is ADMIN
-        const showActions = isOwnData || isAdmin;
+        // Show edit/delete buttons if user is ADMIN, MANAGER, or it's their own data
+        const showActions = canEditDelete || isOwnData;
         
         return `
     <tr>
@@ -100,7 +102,7 @@ function displayAssistantManagers(assistantManagers) {
       <td>
         ${showActions ? `
         <button class="btn-small btn-edit" onclick="editAssistantManager(${assistantManager.user_id || assistantManager.id})">Edit</button>
-        ${isAdmin ? `<button class="btn-small btn-delete" onclick="deleteAssistantManager(${assistantManager.user_id || assistantManager.id})">Delete</button>` : ''}
+        ${canEditDelete ? `<button class="btn-small btn-delete" onclick="deleteAssistantManager(${assistantManager.user_id || assistantManager.id})">Delete</button>` : ''}
         ` : '<span style="color: #999;">No actions available</span>'}
       </td>
     </tr>
@@ -290,4 +292,8 @@ async function deleteAssistantManager(id) {
     showMessage(document.getElementById("assistantManagerMessage"), "Error deleting assistant manager: " + error.message, "error");
   }
 }
+
+// Make functions global for onclick handlers
+window.editAssistantManager = editAssistantManager;
+window.deleteAssistantManager = deleteAssistantManager;
 

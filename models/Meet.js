@@ -29,7 +29,7 @@ class Meet {
       SELECT m.*, 
              u.name as instructor_name, u.surname as instructor_surname
       FROM meets m
-      JOIN users u ON m.instructor_id = u.user_id
+      LEFT JOIN users u ON m.instructor_id = u.user_id
       WHERE m.meet_id = $1
     `;
     const result = await pool.query(query, [meetId]);
@@ -58,7 +58,7 @@ class Meet {
              u.name as instructor_name, u.surname as instructor_surname
       FROM meets m
       JOIN meet_students ms ON m.meet_id = ms.meet_id
-      JOIN users u ON m.instructor_id = u.user_id
+      LEFT JOIN users u ON m.instructor_id = u.user_id
       WHERE ms.student_id = $1
       ORDER BY m.date DESC, m.start_time DESC
     `;
@@ -71,7 +71,7 @@ class Meet {
       SELECT m.*, 
              u.name as instructor_name, u.surname as instructor_surname
       FROM meets m
-      JOIN users u ON m.instructor_id = u.user_id
+      LEFT JOIN users u ON m.instructor_id = u.user_id
       ORDER BY m.date DESC, m.start_time DESC
     `;
     const result = await pool.query(query);

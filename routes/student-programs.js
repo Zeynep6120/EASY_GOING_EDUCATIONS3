@@ -318,10 +318,24 @@ router.put("/student-programs/:student_id/:course_program_id", authenticateToken
 });
 
 // DELETE /api/student-programs/:student_id/:course_program_id - Delete student-program relationship
-router.delete("/student-programs/:student_id/:course_program_id", authenticateToken, requireMinRole("MANAGER"), async (req, res) => {
+router.delete("/student-programs/:student_id/:course_program_id", authenticateToken, async (req, res) => {
   try {
     const student_id = Number(req.params.student_id);
     const course_program_id = Number(req.params.course_program_id);
+    const userId = Number(req.user.id);
+    const userRole = req.user.role?.toUpperCase();
+
+    // Check if user is authorized:
+    // - ADMIN, MANAGER, ASSISTANT_MANAGER can delete any student-program relationship
+    // - STUDENT can only delete their own student-program relationships
+    if (userRole !== "ADMIN" && userRole !== "MANAGER" && userRole !== "ASSISTANT_MANAGER") {
+      if (userRole === "STUDENT" && userId !== student_id) {
+        return res.status(403).json({ message: "Forbidden - You can only unenroll from your own programs" });
+      }
+      if (userRole !== "STUDENT") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+    }
 
     const query = `
       DELETE FROM student_programs

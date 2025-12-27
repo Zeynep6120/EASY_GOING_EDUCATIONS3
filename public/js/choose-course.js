@@ -117,7 +117,7 @@ async function loadAvailablePrograms() {
     
     // Filter out already enrolled programs
     const availablePrograms = allPrograms.filter(p => {
-      const programId = p.lesson_program_id || p.id;
+      const programId = p.course_program_id || p.lesson_program_id || p.id;
       return !enrolledPrograms.includes(programId);
     });
     
@@ -145,7 +145,7 @@ async function getEnrolledProgramIds() {
     const content = Array.isArray(programs) ? programs : (programs.content || []);
     
     // Filter only enrolled programs (student can only see their own enrolled programs)
-    return content.map(p => p.lesson_program_id);
+    return content.map(p => p.course_program_id || p.lesson_program_id || p.id).filter(Boolean);
   } catch (error) {
     console.error("Error getting enrolled programs:", error);
     return [];
@@ -175,7 +175,7 @@ async function displayAvailablePrograms(programs) {
   // Load details for each program
   const programsWithDetails = await Promise.all(
     programs.map(async (program) => {
-      const programId = program.lesson_program_id || program.id;
+      const programId = program.course_program_id || program.lesson_program_id || program.id;
       try {
         // Load courses (changed from lessons)
         const coursesRes = await fetch(`${API_BASE}/${programId}/courses`, {
@@ -216,7 +216,7 @@ async function displayAvailablePrograms(programs) {
   container.innerHTML = programsWithDetails
     .map(
       (program) => {
-        const programId = program.lesson_program_id || program.id;
+        const programId = program.course_program_id || program.lesson_program_id || program.id;
         const courseNames = program.courses?.map(c => c.title || c.course_name || c.lesson_name).filter(Boolean).join(", ") || "No Courses Assigned";
         const instructorNames = program.instructors?.map(t => `${t.name || ""} ${t.surname || ""}`).filter(Boolean).join(", ") || "No Instructors Assigned";
         const studentCount = program.students?.length || 0;
@@ -313,7 +313,7 @@ async function displayEnrolledPrograms(programs) {
   // Load details for each enrolled program
   const programsWithDetails = await Promise.all(
     programs.map(async (program) => {
-      const programId = program.lesson_program_id || program.id;
+      const programId = program.course_program_id || program.lesson_program_id || program.id;
       try {
         // Load courses (changed from lessons)
         const coursesRes = await fetch(`${API_BASE}/${programId}/courses`, {

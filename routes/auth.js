@@ -17,6 +17,14 @@ router.post("/register", async (req, res) => {
   try {
     await client.query("BEGIN");
 
+    // Ensure sequence is synchronized with max user_id
+    await client.query(`
+      SELECT setval('users_user_id_seq', 
+        COALESCE((SELECT MAX(user_id) FROM users), 0), 
+        true
+      )
+    `);
+
     const abort = async (status, payload) => {
       await client.query("ROLLBACK");
       return res.status(status).json(payload);
