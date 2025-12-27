@@ -25,22 +25,29 @@ router.get("/search", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
 
     const offset = page * size;
 
-    // Get instructors (after migration, teachers table is removed, all data is in users table)
+    // Get instructors with instructors table data - only from instructors table
     // Check if user is advisor by checking students.advisor_instructor_id
     const result = await pool.query(
       `SELECT 
         u.user_id, u.username, u.name, u.surname, u.email, u.gender, u.birth_date, u.birth_place, u.phone_number, u.ssn,
+        i.title,
+        i.bio,
+        i.image,
+        i.social_links,
         CASE WHEN EXISTS (SELECT 1 FROM students WHERE advisor_instructor_id = u.user_id) THEN true ELSE false END as is_advisor_instructor
-       FROM users u
+       FROM instructors i
+       INNER JOIN users u ON u.user_id = i.instructor_id
        WHERE u.role = 'INSTRUCTOR'
        ORDER BY u.${sortColumn} ${sortType}
        LIMIT $1 OFFSET $2`,
       [size, offset]
     );
 
-    // Get total count
+    // Get total count from instructors table
     const countResult = await pool.query(
-      "SELECT COUNT(*) FROM users WHERE role = 'INSTRUCTOR'"
+      `SELECT COUNT(*) FROM instructors i
+       INNER JOIN users u ON u.user_id = i.instructor_id
+       WHERE u.role = 'INSTRUCTOR'`
     );
     const totalElements = parseInt(countResult.rows[0].count);
 
@@ -57,14 +64,23 @@ router.get("/search", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
   }
 });
 
-// Get all instructors (no pagination)
+// Get all instructors (no pagination) - only from instructors table
 router.get("/getAll", authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT 
-        u.user_id, u.username, u.name, u.surname, u.email,
+        u.user_id, 
+        u.username, 
+        u.name, 
+        u.surname, 
+        u.email,
+        i.title,
+        i.bio,
+        i.image,
+        i.social_links,
         CASE WHEN EXISTS (SELECT 1 FROM students WHERE advisor_instructor_id = u.user_id) THEN true ELSE false END as is_advisor_instructor
-       FROM users u
+       FROM instructors i
+       INNER JOIN users u ON u.user_id = i.instructor_id
        WHERE u.role = 'INSTRUCTOR'
        ORDER BY u.name`
     );
@@ -84,8 +100,13 @@ router.get("/getSavedInstructorById/:id", authenticateToken, requireMinRole("ASS
     const result = await pool.query(
       `SELECT 
         u.user_id, u.username, u.name, u.surname, u.email, u.gender, u.birth_date, u.birth_place, u.phone_number, u.ssn,
+        i.title,
+        i.bio,
+        i.image,
+        i.social_links,
         CASE WHEN EXISTS (SELECT 1 FROM students WHERE advisor_instructor_id = u.user_id) THEN true ELSE false END as is_advisor_instructor
        FROM users u
+       LEFT JOIN instructors i ON i.instructor_id = u.user_id
        WHERE u.user_id = $1 AND u.role = 'INSTRUCTOR'`,
       [id]
     );
@@ -118,6 +139,8 @@ router.post("/save", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), asy
       birth_place,
       phone_number,
       ssn,
+      title,
+      bio,
       is_advisor_instructor,
     } = req.body;
 
@@ -178,18 +201,34 @@ router.post("/save", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), asy
       email: user.email,
     });
 
-    // Also insert into instructors table
+    // Also insert into instructors table with all fields
     try {
-      const fullName = `${name} ${surname}`.trim();
       const instructorResult = await client.query(
-        `INSERT INTO instructors (instructor_id, name, title, bio)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO instructors (instructor_id, name, surname, username, email, title, bio, image, social_links, password)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          ON CONFLICT (instructor_id) DO UPDATE SET
            name = EXCLUDED.name,
+           surname = EXCLUDED.surname,
+           username = EXCLUDED.username,
+           email = EXCLUDED.email,
            title = COALESCE(EXCLUDED.title, instructors.title),
-           bio = COALESCE(EXCLUDED.bio, instructors.bio)
+           bio = COALESCE(EXCLUDED.bio, instructors.bio),
+           image = COALESCE(EXCLUDED.image, instructors.image),
+           social_links = COALESCE(EXCLUDED.social_links, instructors.social_links),
+           password = EXCLUDED.password
          RETURNING *`,
-        [user.user_id, fullName, `${name} ${surname}`.trim() || null, null]
+        [
+          user.user_id, 
+          name, 
+          surname, 
+          username, 
+          email, 
+          title || null, // title from form
+          bio || null, // bio from form
+          '/images/default-instructor.jpg', // default image
+          JSON.stringify({}), // default social_links
+          hashedPassword
+        ]
       );
       console.log("Instructor record created/updated in instructors table:", instructorResult.rows[0]);
     } catch (instructorError) {
@@ -255,6 +294,8 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
       birth_place,
       phone_number,
       ssn,
+      title,
+      bio,
       is_advisor_instructor,
     } = req.body;
 
@@ -345,17 +386,36 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
       await client.query(query, values);
     }
 
-    // Also update instructors table
+    // Also update instructors table with all fields
     try {
-      const fullName = name && surname ? `${name} ${surname}`.trim() : null;
-      if (fullName) {
+      // Get current user data for fallback values
+      const currentUser = await User.findById(id, client);
+      const currentInstructor = await client.query(
+        'SELECT * FROM instructors WHERE instructor_id = $1',
+        [id]
+      ).then(r => r.rows[0]);
+
+      const updateName = name !== undefined ? name : (currentUser?.name || currentInstructor?.name);
+      const updateSurname = surname !== undefined ? surname : (currentUser?.surname || currentInstructor?.surname);
+      const updateUsername = username !== undefined ? username : (currentUser?.username || currentInstructor?.username);
+      const updateEmail = email !== undefined ? email : (currentUser?.email || currentInstructor?.email);
+      const updatePassword = password ? hashedPassword : (currentInstructor?.password || null);
+      const updateTitle = title !== undefined ? title : (currentInstructor?.title || null);
+      const updateBio = bio !== undefined ? bio : (currentInstructor?.bio || null);
+
+      if (name !== undefined || surname !== undefined || username !== undefined || email !== undefined || password || title !== undefined || bio !== undefined) {
         await client.query(
-          `INSERT INTO instructors (instructor_id, name, title)
-           VALUES ($1, $2, $3)
+          `INSERT INTO instructors (instructor_id, name, surname, username, email, title, bio, password)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            ON CONFLICT (instructor_id) DO UPDATE SET
-             name = EXCLUDED.name,
-             title = COALESCE(EXCLUDED.title, instructors.title)`,
-          [id, fullName, fullName]
+             name = COALESCE(EXCLUDED.name, instructors.name),
+             surname = COALESCE(EXCLUDED.surname, instructors.surname),
+             username = COALESCE(EXCLUDED.username, instructors.username),
+             email = COALESCE(EXCLUDED.email, instructors.email),
+             title = COALESCE(EXCLUDED.title, instructors.title),
+             bio = COALESCE(EXCLUDED.bio, instructors.bio),
+             password = COALESCE(EXCLUDED.password, instructors.password)`,
+          [id, updateName, updateSurname, updateUsername, updateEmail, updateTitle, updateBio, updatePassword]
         );
         console.log("Instructor record updated in instructors table");
       }

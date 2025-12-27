@@ -73,7 +73,7 @@ function displayInstructors(instructors) {
   if (!tbody) return;
 
   if (instructors.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='7'>No instructors found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='8'>No instructors found</td></tr>";
     return;
   }
 
@@ -82,10 +82,11 @@ function displayInstructors(instructors) {
       (instructor) => `
     <tr>
       <td>${instructor.user_id || instructor.id || instructor.instructor_id}</td>
-      <td>${instructor.username}</td>
-      <td>${instructor.name}</td>
+      <td>${instructor.username || ""}</td>
+      <td>${instructor.name || ""}</td>
       <td>${instructor.surname || ""}</td>
-      <td>${instructor.email}</td>
+      <td>${instructor.email || ""}</td>
+      <td>${instructor.title || "N/A"}</td>
       <td>${instructor.is_advisor_instructor ? "Yes" : "No"}</td>
       <td>
         <button class="btn-small btn-edit" onclick="editInstructor(${instructor.user_id || instructor.id || instructor.instructor_id})">Edit</button>
@@ -160,6 +161,8 @@ async function handleSubmit(e) {
     birth_place: document.getElementById("instructorBirthPlace").value.trim() || null,
     phone_number: document.getElementById("instructorPhone").value.trim() || null,
     ssn: document.getElementById("instructorSSN").value.trim() || null,
+    title: document.getElementById("instructorTitle").value.trim() || null,
+    bio: document.getElementById("instructorBio").value.trim() || null,
     role: "INSTRUCTOR",
     is_advisor_instructor: document.getElementById("instructorIsAdvisor").checked,
   };
@@ -272,6 +275,8 @@ async function editInstructor(id) {
     document.getElementById("instructorBirthPlace").value = instructor.birth_place || "";
     document.getElementById("instructorPhone").value = instructor.phone_number || "";
     document.getElementById("instructorSSN").value = instructor.ssn || "";
+    document.getElementById("instructorTitle").value = instructor.title || "";
+    document.getElementById("instructorBio").value = instructor.bio || "";
     document.getElementById("instructorIsAdvisor").checked = instructor.is_advisor_instructor || false;
     document.getElementById("instructorPassword").required = false;
 
