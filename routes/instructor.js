@@ -178,9 +178,24 @@ router.post("/save", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), asy
       email: user.email,
     });
 
-    // Note: After migration, there's no separate instructors table for users
-    // All instructor data is in users table with role = 'INSTRUCTOR'
-    // Advisor status is tracked via students.advisor_instructor_id
+    // Also insert into instructors table
+    try {
+      const fullName = `${name} ${surname}`.trim();
+      const instructorResult = await client.query(
+        `INSERT INTO instructors (instructor_id, name, title, bio)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (instructor_id) DO UPDATE SET
+           name = EXCLUDED.name,
+           title = COALESCE(EXCLUDED.title, instructors.title),
+           bio = COALESCE(EXCLUDED.bio, instructors.bio)
+         RETURNING *`,
+        [user.user_id, fullName, `${name} ${surname}`.trim() || null, null]
+      );
+      console.log("Instructor record created/updated in instructors table:", instructorResult.rows[0]);
+    } catch (instructorError) {
+      console.warn("Could not insert into instructors table:", instructorError.message);
+      // Continue even if instructors table insert fails
+    }
 
     await client.query("COMMIT");
     console.log("Transaction committed successfully");
@@ -330,8 +345,24 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
       await client.query(query, values);
     }
 
-    // Note: After migration, advisor status is tracked via students.advisor_instructor_id
-    // We don't need to update a separate instructors table
+    // Also update instructors table
+    try {
+      const fullName = name && surname ? `${name} ${surname}`.trim() : null;
+      if (fullName) {
+        await client.query(
+          `INSERT INTO instructors (instructor_id, name, title)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (instructor_id) DO UPDATE SET
+             name = EXCLUDED.name,
+             title = COALESCE(EXCLUDED.title, instructors.title)`,
+          [id, fullName, fullName]
+        );
+        console.log("Instructor record updated in instructors table");
+      }
+    } catch (instructorError) {
+      console.warn("Could not update instructors table:", instructorError.message);
+      // Continue even if instructors table update fails
+    }
 
     await client.query("COMMIT");
 
@@ -393,6 +424,15 @@ router.delete("/delete/:id", authenticateToken, requireMinRole("ASSISTANT_MANAGE
     } catch (instructorProgramsDeleteError) {
       // If instructor_programs table doesn't exist, that's okay
       console.warn("Could not delete from instructor_programs table:", instructorProgramsDeleteError.message);
+    }
+
+    // Delete from instructors table
+    try {
+      await client.query("DELETE FROM instructors WHERE instructor_id = $1", [id]);
+      console.log("Instructor record deleted from instructors table");
+    } catch (instructorDeleteError) {
+      console.warn("Could not delete from instructors table:", instructorDeleteError.message);
+      // Continue even if instructors table delete fails
     }
 
     // Delete from users table

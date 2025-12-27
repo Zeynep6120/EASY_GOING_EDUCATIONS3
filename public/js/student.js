@@ -283,8 +283,14 @@ async function handleSubmit(e) {
 
   // Validation
   if (!formData.username || !formData.name || !formData.surname || !formData.email || 
-      !formData.father_name || !formData.mother_name || !formData.advisor_instructor_id) {
-    showMessage(messageEl, "Please fill all required fields (including Advisor Instructor)", "error");
+      !formData.father_name || !formData.mother_name) {
+    showMessage(messageEl, "Please fill all required fields", "error");
+    return;
+  }
+
+  // Advisor instructor is optional for update, required for create
+  if (!studentId && !formData.advisor_instructor_id) {
+    showMessage(messageEl, "Advisor Instructor is required for new students", "error");
     return;
   }
 
@@ -352,34 +358,49 @@ async function handleSubmit(e) {
 
 // Edit student (make it globally accessible)
 window.editStudent = async function editStudent(id) {
+  const messageEl = document.getElementById("studentMessage");
   try {
     console.log("Loading student with ID:", id);
+    
+    if (!id) {
+      showMessage(messageEl, "Invalid student ID", "error");
+      return;
+    }
+
     const res = await fetch(`${API_BASE}/getStudentById?id=${id}`, {
       headers: getAuthHeaders(),
     });
 
     if (!res.ok) {
-      const errorData = await res.json().catch(() => ({ message: "Failed to load student" }));
-      throw new Error(errorData.message || `HTTP ${res.status}: Failed to load student`);
+      let errorData;
+      try {
+        errorData = await res.json();
+      } catch (parseError) {
+        errorData = { message: `HTTP ${res.status}: Failed to load student` };
+      }
+      const errorMessage = errorData.message || errorData.error || `HTTP ${res.status}: Failed to load student`;
+      showMessage(messageEl, errorMessage, "error");
+      return;
     }
 
     const student = await res.json();
     console.log("Student data loaded:", student);
 
-    if (!student) {
-      showMessage(document.getElementById("studentMessage"), "Student not found", "error");
+    if (!student || (!student.user_id && !student.id && !student.student_id)) {
+      showMessage(messageEl, "Student not found", "error");
       return;
     }
 
     // Fill form
     document.getElementById("modalTitle").textContent = "Edit Student";
-    document.getElementById("studentId").value = student.user_id || student.id || student.student_id;
+    const studentId = student.user_id || student.id || student.student_id;
+    document.getElementById("studentId").value = studentId;
     document.getElementById("studentUsername").value = student.username || "";
     document.getElementById("studentName").value = student.name || "";
     document.getElementById("studentSurname").value = student.surname || "";
     document.getElementById("studentEmail").value = student.email || "";
     document.getElementById("studentGender").value = student.gender || "";
-    document.getElementById("studentBirthDate").value = student.birth_date || "";
+    document.getElementById("studentBirthDate").value = student.birth_date ? student.birth_date.split('T')[0] : "";
     document.getElementById("studentBirthPlace").value = student.birth_place || "";
     document.getElementById("studentPhone").value = student.phone_number || "";
     document.getElementById("studentSSN").value = student.ssn || "";
@@ -394,19 +415,30 @@ window.editStudent = async function editStudent(id) {
     document.getElementById("studentModal").style.display = "block";
   } catch (error) {
     console.error("Error loading student:", error);
-    showMessage(document.getElementById("studentMessage"), "Error loading student: " + error.message, "error");
+    showMessage(messageEl, "Error loading student: " + (error.message || "Unknown error"), "error");
   }
 }
 
 // Delete student (make it globally accessible)
 window.deleteStudent = async function deleteStudent(id) {
-  if (!confirm("Are you sure you want to delete this student?")) {
+  const messageEl = document.getElementById("studentMessage");
+  
+  // Validate ID
+  const studentId = id ? parseInt(id) : null;
+  if (!studentId || isNaN(studentId)) {
+    showMessage(messageEl, "Invalid student ID", "error");
+    return;
+  }
+
+  if (!confirm("Are you sure you want to delete this student? This action cannot be undone.")) {
     return;
   }
 
   try {
-    console.log("Deleting student with ID:", id);
-    const res = await fetch(`${API_BASE}/delete/${id}`, {
+    console.log("Deleting student with ID:", studentId);
+    showMessage(messageEl, "Deleting student...", "success");
+    
+    const res = await fetch(`${API_BASE}/delete/${studentId}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -414,21 +446,36 @@ window.deleteStudent = async function deleteStudent(id) {
     if (res.ok) {
       const data = await res.json();
       console.log("Delete response:", data);
-      showMessage(document.getElementById("studentMessage"), "Student deleted successfully", "success");
+      showMessage(messageEl, data.message || "Student deleted successfully", "success");
       
       // Reload students after a short delay
       setTimeout(() => {
         loadStudents();
       }, 500);
     } else {
-      const errorData = await res.json().catch(() => ({ message: "Failed to delete student" }));
-      const errorMessage = errorData.message || errorData.error || `HTTP ${res.status}: Failed to delete student`;
-      console.error("Delete error response:", errorData);
-      showMessage(document.getElementById("studentMessage"), errorMessage, "error");
+      let errorData;
+      try {
+        errorData = await res.json();
+      } catch (parseError) {
+        console.error("Failed to parse error response:", parseError);
+        errorData = { 
+          message: `HTTP ${res.status}: Failed to delete student`,
+          error: res.statusText 
+        };
+      }
+      
+      const errorMessage = errorData.error || errorData.message || `HTTP ${res.status}: Failed to delete student`;
+      console.error("Delete error response:", {
+        status: res.status,
+        statusText: res.statusText,
+        error: errorData,
+      });
+      
+      showMessage(messageEl, errorMessage, "error");
     }
   } catch (error) {
     console.error("Error deleting student:", error);
-    showMessage(document.getElementById("studentMessage"), "Error deleting student: " + error.message, "error");
+    showMessage(messageEl, "Error deleting student: " + (error.message || "Unknown error"), "error");
   }
 }
 

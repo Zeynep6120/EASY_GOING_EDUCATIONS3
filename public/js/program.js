@@ -130,31 +130,27 @@ async function displayPrograms(programs) {
   if (!tbody) return;
 
   if (programs.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='7'>No programs found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='8'>No programs found</td></tr>";
     return;
   }
 
-  // Load lessons for each program
-  const programsWithLessons = await Promise.all(
-    programs.map(async (program) => {
-      const programId = program.id || program.lesson_program_id;
-      try {
-        const lessonsRes = await fetch(`${API_BASE}/${programId}/lessons`, {
-          headers: getAuthHeaders(),
-        });
-        const lessons = lessonsRes.ok ? await lessonsRes.json() : [];
-        return {
-          ...program,
-          lessons: lessons,
-          lesson_name: lessons.length > 0 ? (lessons[0].lesson_name || lessons[0].lessonName || "") : "",
-        };
-      } catch (error) {
-        return { ...program, lessons: [], lesson_name: "" };
-      }
-    })
-  );
+  // Course information is already in the program data from backend (lesson_programs table)
+  // PostgreSQL returns snake_case, so we need to check both snake_case and camelCase
+  const programsWithCourses = programs.map((program) => {
+    // Handle both snake_case (from DB) and camelCase (if transformed)
+    const courseId = program.course_id !== null && program.course_id !== undefined 
+      ? program.course_id 
+      : (program.courseId !== null && program.courseId !== undefined ? program.courseId : null);
+    const courseName = program.course_name || program.courseName || null;
+    
+    return {
+      ...program,
+      course_id: courseId,
+      course_name: courseName,
+    };
+  });
 
-  tbody.innerHTML = programsWithLessons
+  tbody.innerHTML = programsWithCourses
     .map(
       (program) => `
     <tr>
@@ -163,7 +159,8 @@ async function displayPrograms(programs) {
       <td>${program.start_time || ""}</td>
       <td>${program.stop_time || ""}</td>
       <td>${program.term_name || program.education_term_name || ""}</td>
-      <td>${program.lesson_name || (program.lessons && program.lessons.length > 0 ? program.lessons.map(l => l.lesson_name || l.lessonName).join(", ") : "")}</td>
+      <td>${program.course_id !== null && program.course_id !== undefined ? program.course_id : "-"}</td>
+      <td>${program.course_name ? program.course_name : "-"}</td>
       <td>
         <button class="btn-small btn-edit" onclick="editProgram(${program.id || program.lesson_program_id})">Edit</button>
         <button class="btn-small btn-delete" onclick="deleteProgram(${program.id || program.lesson_program_id})">Delete</button>

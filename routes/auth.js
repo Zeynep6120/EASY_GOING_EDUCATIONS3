@@ -278,6 +278,15 @@ router.post("/register", async (req, res) => {
     console.log("Verified user exists in database:", verifyUser.rows[0]);
 
     // Generate token
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not configured");
+      await client.query("ROLLBACK");
+      return res.status(500).json({ 
+        message: "Server configuration error", 
+        error: "JWT_SECRET is not configured. Please set JWT_SECRET in .env file." 
+      });
+    }
+
     const token = jwt.sign(
       { id: user.user_id, role: user.role, username: user.username },
       process.env.JWT_SECRET,
@@ -320,6 +329,15 @@ router.post("/register", async (req, res) => {
 // Login with username
 router.post("/login", async (req, res) => {
   try {
+    // Check if JWT_SECRET is configured
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not configured in environment variables");
+      return res.status(500).json({ 
+        message: "Server configuration error", 
+        error: "JWT_SECRET is not configured. Please set JWT_SECRET in .env file." 
+      });
+    }
+
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -377,7 +395,9 @@ router.post("/login", async (req, res) => {
         console.log(`Login failed for ${username}: plain text password mismatch. DB: "${userPassword}", Input: "${inputPassword}"`);
       }
       
-      // If match and password is plain text, hash it and update in database
+      // Plain text password'ları hash'leme - kullanıcı plain text istediği için hash'lemiyoruz
+      // Eğer ileride hash'lemek isterseniz, aşağıdaki kodu aktif edebilirsiniz:
+      /*
       if (isMatch) {
         const hashedPassword = await bcrypt.hash(password, 10);
         await pool.query(
@@ -386,6 +406,7 @@ router.post("/login", async (req, res) => {
         );
         console.log(`Password hashed and updated for user: ${username}`);
       }
+      */
     }
 
     if (!isMatch) {
@@ -403,21 +424,37 @@ router.post("/login", async (req, res) => {
     try {
       if (user.role === "INSTRUCTOR") {
         // Check if instructor is advisor
-        const advisorCheck = await pool.query(
-          "SELECT EXISTS (SELECT 1 FROM students WHERE advisor_instructor_id = $1) as is_advisor",
-          [user.user_id]
-        );
-        roleData = { is_advisor_instructor: advisorCheck.rows[0].is_advisor || false };
+        try {
+          const advisorCheck = await pool.query(
+            "SELECT EXISTS (SELECT 1 FROM students WHERE advisor_instructor_id = $1) as is_advisor",
+            [user.user_id]
+          );
+          roleData = { is_advisor_instructor: advisorCheck.rows[0]?.is_advisor || false };
+        } catch (advisorError) {
+          console.error("Error checking advisor status:", advisorError);
+          roleData = { is_advisor_instructor: false };
+        }
       } else if (user.role === "STUDENT") {
-        const student = await Student.findById(user.user_id);
-        if (student) {
-          roleData = {
-            father_name: student.father_name || null,
-            mother_name: student.mother_name || null,
-            advisor_instructor_id: student.advisor_instructor_id || null,
-            advisor_name: student.advisor_name || null,
-            advisor_surname: student.advisor_surname || null,
-          };
+        try {
+          const student = await Student.findById(user.user_id);
+          if (student) {
+            roleData = {
+              father_name: student.father_name || null,
+              mother_name: student.mother_name || null,
+              advisor_instructor_id: student.advisor_instructor_id || null,
+              advisor_name: student.advisor_name || null,
+              advisor_surname: student.advisor_surname || null,
+            };
+          } else {
+            // Student record doesn't exist in students table, but user exists
+            // This is okay, just return empty roleData
+            console.warn(`Student record not found for user_id: ${user.user_id}`);
+            roleData = {};
+          }
+        } catch (studentError) {
+          console.error("Error loading student data:", studentError);
+          // Continue with login even if student data fails
+          roleData = {};
         }
       } else if (user.role === "MANAGER" || user.role === "ASSISTANT_MANAGER") {
         // Manager and Assistant Manager don't have role-specific tables
@@ -451,7 +488,22 @@ router.post("/login", async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Error stack:", error.stack);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint,
+      constraint: error.constraint,
+    });
+    
+    // Return more detailed error message for debugging
+    const errorMessage = error.detail || error.hint || error.message || "Server error";
+    res.status(500).json({ 
+      message: "Server error", 
+      error: errorMessage,
+      code: error.code,
+    });
   }
 });
 

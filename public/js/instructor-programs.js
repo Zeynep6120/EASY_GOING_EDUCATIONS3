@@ -124,6 +124,23 @@ async function loadInstructorPrograms() {
     const instructorPrograms = Array.isArray(data) ? data : [];
     
     console.log("Loaded instructor programs:", instructorPrograms); // Debug log
+    console.log("First instructor program sample:", instructorPrograms[0]); // Debug log - check first item
+    
+    // Verify data structure
+    if (instructorPrograms.length > 0) {
+      const first = instructorPrograms[0];
+      console.log("Sample data structure:", {
+        instructor_id: first.instructor_id,
+        instructor_name: first.instructor_name,
+        instructor_surname: first.instructor_surname,
+        instructor_email: first.instructor_email,
+        instructor_username: first.instructor_username,
+        lesson_program_id: first.lesson_program_id,
+        day_of_week: first.day_of_week,
+        term_name: first.term_name,
+        courses: first.courses
+      });
+    }
     
     displayInstructorPrograms(instructorPrograms);
     
@@ -162,13 +179,26 @@ function displayInstructorPrograms(instructorPrograms) {
   let rows = [];
   
   instructorPrograms.forEach((ip) => {
+    // Debug: Log each instructor program to see what data we have
+    console.log("Processing instructor program:", {
+      instructor_id: ip.instructor_id,
+      instructor_name: ip.instructor_name,
+      instructor_surname: ip.instructor_surname,
+      instructor_email: ip.instructor_email,
+      instructor_username: ip.instructor_username,
+      lesson_program_id: ip.lesson_program_id,
+      day_of_week: ip.day_of_week,
+      term_name: ip.term_name,
+      courses_count: ip.courses ? ip.courses.length : 0
+    });
+    
     // If no program assigned, show instructor info but indicate no program
     if (!ip.lesson_program_id) {
       rows.push(`
     <tr>
-      <td>${ip.instructor_id}</td>
-      <td>${ip.instructor_name || ""}</td>
-      <td>${ip.instructor_surname || ""}</td>
+      <td>${ip.instructor_id || ""}</td>
+      <td>${ip.instructor_name || ip.instructor_full_name?.split(' ')[0] || ""}</td>
+      <td>${ip.instructor_surname || ip.instructor_full_name?.split(' ').slice(1).join(' ') || ""}</td>
       <td>${ip.instructor_email || ""}</td>
       <td>${ip.instructor_username || ""}</td>
       <td>-</td>
@@ -190,19 +220,19 @@ function displayInstructorPrograms(instructorPrograms) {
         const isFirstCourse = index === 0;
         rows.push(`
     <tr>
-      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_id}</td>` : ''}
-      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_name || ""}</td>` : ''}
-      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_surname || ""}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_id || ""}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_name || ip.instructor_full_name?.split(' ')[0] || ""}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_surname || ip.instructor_full_name?.split(' ').slice(1).join(' ') || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_email || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_username || ""}</td>` : ''}
-      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.lesson_program_id}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.lesson_program_id || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.day_of_week || ""}</td>` : ''}
-      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${formatTime(ip.start_time)} - ${formatTime(ip.stop_time)}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.start_time && ip.stop_time ? formatTime(ip.start_time) + " - " + formatTime(ip.stop_time) : ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.term_name || ""}</td>` : ''}
       <td>${course.course_id || ""}</td>
       <td>${course.course_name || course.title || "N/A"}</td>
-      <td>${course.description || ""}</td>
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">
+        <button class="btn-small btn-edit" onclick="editInstructorProgram(${ip.instructor_id}, ${ip.lesson_program_id})" style="margin-right: 5px;">Edit</button>
         <button class="btn-small btn-delete" onclick="deleteInstructorProgram(${ip.instructor_id}, ${ip.lesson_program_id})">Delete</button>
       </td>` : ''}
     </tr>
@@ -212,19 +242,19 @@ function displayInstructorPrograms(instructorPrograms) {
       // No courses assigned
       rows.push(`
     <tr>
-      <td>${ip.instructor_id}</td>
-      <td>${ip.instructor_name || ""}</td>
-      <td>${ip.instructor_surname || ""}</td>
+      <td>${ip.instructor_id || ""}</td>
+      <td>${ip.instructor_name || ip.instructor_full_name?.split(' ')[0] || ""}</td>
+      <td>${ip.instructor_surname || ip.instructor_full_name?.split(' ').slice(1).join(' ') || ""}</td>
       <td>${ip.instructor_email || ""}</td>
       <td>${ip.instructor_username || ""}</td>
-      <td>${ip.lesson_program_id}</td>
+      <td>${ip.lesson_program_id || ""}</td>
       <td>${ip.day_of_week || ""}</td>
-      <td>${formatTime(ip.start_time)} - ${formatTime(ip.stop_time)}</td>
+      <td>${ip.start_time && ip.stop_time ? formatTime(ip.start_time) + " - " + formatTime(ip.stop_time) : ""}</td>
       <td>${ip.term_name || ""}</td>
       <td>-</td>
       <td>-</td>
-      <td>No courses assigned</td>
       <td>
+        <button class="btn-small btn-edit" onclick="editInstructorProgram(${ip.instructor_id}, ${ip.lesson_program_id})" style="margin-right: 5px;">Edit</button>
         <button class="btn-small btn-delete" onclick="deleteInstructorProgram(${ip.instructor_id}, ${ip.lesson_program_id})">Delete</button>
       </td>
     </tr>
@@ -261,6 +291,10 @@ function setupModal() {
   });
 }
 
+// Global variables for edit mode
+let editingInstructorId = null;
+let editingLessonProgramId = null;
+
 // Setup form
 function setupForm() {
   const addBtn = document.getElementById("addInstructorProgramBtn");
@@ -268,6 +302,8 @@ function setupForm() {
 
   if (addBtn) {
     addBtn.addEventListener("click", () => {
+      editingInstructorId = null;
+      editingLessonProgramId = null;
       document.getElementById("modalTitle").textContent = "Add Instructor Program";
       document.getElementById("instructorProgramForm").reset();
       document.getElementById("instructorProgramModal").style.display = "block";
@@ -295,29 +331,64 @@ async function handleSubmit(e) {
   }
 
   try {
-    showMessage(messageEl, "Creating instructor program...", "success");
+    if (editingInstructorId && editingLessonProgramId) {
+      // Update mode
+      showMessage(messageEl, "Updating instructor program...", "success");
 
-    const res = await fetch(API_BASE, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(formData),
-    });
+      const res = await fetch(`${API_BASE}/${editingInstructorId}/${editingLessonProgramId}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(formData),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      showMessage(messageEl, data.message || data.error || "Operation failed", "error");
-      return;
+      if (!res.ok) {
+        showMessage(messageEl, data.message || data.error || "Operation failed", "error");
+        return;
+      }
+
+      showMessage(messageEl, "Instructor program updated successfully", "success");
+    } else {
+      // Create mode
+      showMessage(messageEl, "Creating instructor program...", "success");
+
+      const res = await fetch(API_BASE, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMessage(messageEl, data.message || data.error || "Operation failed", "error");
+        return;
+      }
+
+      showMessage(messageEl, "Instructor program created successfully", "success");
     }
 
-    showMessage(messageEl, "Instructor program created successfully", "success");
     document.getElementById("instructorProgramModal").style.display = "none";
     document.getElementById("instructorProgramForm").reset();
+    editingInstructorId = null;
+    editingLessonProgramId = null;
     loadInstructorPrograms();
   } catch (error) {
     console.error("Error saving instructor program:", error);
     showMessage(messageEl, "Error saving instructor program: " + error.message, "error");
   }
+}
+
+// Edit instructor program
+window.editInstructorProgram = async function editInstructorProgram(instructorId, lessonProgramId) {
+  editingInstructorId = instructorId;
+  editingLessonProgramId = lessonProgramId;
+
+  document.getElementById("modalTitle").textContent = "Edit Instructor Program";
+  document.getElementById("instructorId").value = instructorId;
+  document.getElementById("lessonProgramId").value = lessonProgramId;
+  document.getElementById("instructorProgramModal").style.display = "block";
 }
 
 // Delete instructor program

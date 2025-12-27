@@ -5,7 +5,6 @@ const authenticateToken = require("../middleware/auth");
 const { requireMinRole } = require("../middleware/rbac");
 const EducationTerm = require("../models/EducationTerm");
 const pool = require("../db/connection");
-const pool = require("../db/connection");
 
 // Terms are "master data".
 // Per your hierarchy: only ADMIN + MANAGER can manage (and even view) terms.

@@ -352,8 +352,14 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
       return res.status(400).json({ message: "ID is required" });
     }
 
+    const studentId = parseInt(id);
+    if (!studentId || isNaN(studentId)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ message: "Invalid student ID" });
+    }
+
     // Check if student exists
-    const student = await User.findById(id, client);
+    const student = await User.findById(studentId, client);
     if (!student || student.role !== "STUDENT") {
       await client.query("ROLLBACK");
       return res.status(404).json({ message: "Student not found" });
@@ -429,7 +435,7 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
     }
 
     if (updates.length > 0) {
-      values.push(id);
+      values.push(studentId);
       const query = `UPDATE users SET ${updates.join(", ")} WHERE user_id = $${paramCount}`;
       await client.query(query, values);
     }
@@ -437,7 +443,7 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
     // Update students table with all student information
       const studentExists = await client.query(
         "SELECT * FROM students WHERE student_id = $1",
-        [id]
+        [studentId]
       );
       
       if (studentExists.rows.length > 0) {
@@ -498,15 +504,15 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
       }
 
         if (studentUpdates.length > 0) {
-          studentValues.push(id);
+          studentValues.push(studentId);
           const studentQuery = `UPDATE students SET ${studentUpdates.join(", ")} WHERE student_id = $${studentParamCount}`;
           await client.query(studentQuery, studentValues);
         }
       } else {
       // Create student record if it doesn't exist
-      const currentUser = await User.findById(id, client);
+      const currentUser = await User.findById(studentId, client);
         await Student.create(
-          id,
+          studentId,
           father_name || null,
           mother_name || null,
           advisor_instructor_id || null,
@@ -528,8 +534,8 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
 
     await client.query("COMMIT");
 
-    const updatedStudent = await User.findById(id, client);
-    const studentData = await Student.findById(id, client);
+    const updatedStudent = await User.findById(studentId, client);
+    const studentData = await Student.findById(studentId, client);
 
     res.json({
       message: "Student updated successfully",
@@ -556,26 +562,93 @@ router.delete("/delete/:id", authenticateToken, requireMinRole("ASSISTANT_MANAGE
     await client.query("BEGIN");
 
     const { id } = req.params;
+    const studentId = parseInt(id);
+
+    if (!studentId || isNaN(studentId)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ message: "Invalid student ID" });
+    }
 
     // Check if student exists
-    const student = await User.findById(id, client);
+    const student = await User.findById(studentId, client);
     if (!student || student.role !== "STUDENT") {
       await client.query("ROLLBACK");
       return res.status(404).json({ message: "Student not found" });
     }
 
-    // Delete from students table first (to avoid foreign key issues)
-    await client.query("DELETE FROM students WHERE student_id = $1", [id]);
+    // Delete related records first (to avoid foreign key constraint violations)
+    // Order matters: delete child records before parent records
     
-    // Delete from users table
-    await client.query("DELETE FROM users WHERE user_id = $1", [id]);
+    // 1. Delete from student_programs (references students.student_id)
+    try {
+      await client.query("DELETE FROM student_programs WHERE student_id = $1", [studentId]);
+      console.log(`Deleted student_programs for student ${studentId}`);
+    } catch (err) {
+      console.warn(`Error deleting student_programs: ${err.message}`);
+      // Continue even if this fails
+    }
+    
+    // 2. Delete from meet_students (references students.student_id)
+    try {
+      await client.query("DELETE FROM meet_students WHERE student_id = $1", [studentId]);
+      console.log(`Deleted meet_students for student ${studentId}`);
+    } catch (err) {
+      console.warn(`Error deleting meet_students: ${err.message}`);
+      // Continue even if this fails
+    }
+    
+    // 3. Delete from student_info (if exists, references students.student_id)
+    try {
+      await client.query("DELETE FROM student_info WHERE student_id = $1", [studentId]);
+      console.log(`Deleted student_info for student ${studentId}`);
+    } catch (err) {
+      // Table might not exist or no records, ignore error
+      console.log(`student_info deletion skipped: ${err.message}`);
+    }
+
+    // 4. Delete from students table (references users.user_id)
+    try {
+      const deleteStudentsResult = await client.query("DELETE FROM students WHERE student_id = $1 RETURNING *", [studentId]);
+      console.log(`Deleted from students table: ${deleteStudentsResult.rowCount} row(s)`);
+    } catch (err) {
+      console.error(`Error deleting from students table: ${err.message}`);
+      throw err; // This is critical, re-throw
+    }
+    
+    // 5. Delete from users table (parent table)
+    try {
+      const deleteUsersResult = await client.query("DELETE FROM users WHERE user_id = $1 RETURNING *", [studentId]);
+      console.log(`Deleted from users table: ${deleteUsersResult.rowCount} row(s)`);
+      
+      if (deleteUsersResult.rowCount === 0) {
+        throw new Error("User was not deleted");
+      }
+    } catch (err) {
+      console.error(`Error deleting from users table: ${err.message}`);
+      throw err; // This is critical, re-throw
+    }
 
     await client.query("COMMIT");
+    console.log(`Student ${studentId} deleted successfully`);
     res.json({ message: "Student deleted successfully" });
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Error deleting student:", error);
-    res.status(500).json({ message: "Error deleting student", error: error.message });
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint,
+      constraint: error.constraint,
+    });
+    
+    // Return more detailed error message
+    const errorMessage = error.detail || error.hint || error.message || "Unknown error";
+    res.status(500).json({ 
+      message: "Error deleting student", 
+      error: errorMessage,
+      code: error.code,
+    });
   } finally {
     client.release();
   }

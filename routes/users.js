@@ -281,12 +281,59 @@ router.post("/users", authenticateToken, async (req, res) => {
         ]
       );
     } else if (normalizedRole === "INSTRUCTOR") {
-      // Instructors don't have a separate table, data is only in users table
-      // Advisor status is tracked via students.advisor_instructor_id
+      // Insert into instructors table
+      await client.query(
+        `INSERT INTO instructors (
+          instructor_id, name, surname, username, email, title, bio, image, social_links
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (instructor_id) DO UPDATE SET
+          name = EXCLUDED.name,
+          surname = EXCLUDED.surname,
+          username = EXCLUDED.username,
+          email = EXCLUDED.email`,
+        [
+          user.user_id,
+          user.name,
+          user.surname,
+          user.username,
+          user.email,
+          null, // title
+          null, // bio
+          null, // image
+          null, // social_links
+        ]
+      );
+      console.log("Instructor record created in instructors table");
     } else if (normalizedRole === "STUDENT") {
-      // Students need father_name, mother_name, advisor_instructor_id
-      // But these are not provided in this endpoint, so we'll skip specialization table
-      // Student.create should be called separately with those fields
+      // Insert into students table
+      // If father_name, mother_name, advisor_instructor_id are not provided, use null/defaults
+      const Student = require("../models/Student");
+      const {
+        father_name,
+        mother_name,
+        advisor_instructor_id,
+      } = req.body;
+      
+      await Student.create(
+        user.user_id,
+        father_name || null,
+        mother_name || null,
+        advisor_instructor_id || null,
+        {
+          username: user.username,
+          name: user.name,
+          surname: user.surname,
+          email: user.email,
+          gender: user.gender,
+          birth_date: user.birth_date,
+          birth_place: user.birth_place,
+          phone_number: user.phone_number,
+          ssn: user.ssn,
+          is_active: user.is_active !== undefined ? user.is_active : true,
+        },
+        client
+      );
+      console.log("Student record created in students table");
     } else if (normalizedRole === "ADMIN") {
       await client.query(
         `INSERT INTO admins (
@@ -333,9 +380,13 @@ router.post("/users", authenticateToken, async (req, res) => {
 
 // PUT /api/users/:id - Update user (ADMIN only)
 router.put("/users/:id", authenticateToken, async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query("BEGIN");
+
     const role = normalizeRole(req.user.role);
     if (role !== "ADMIN") {
+      await client.query("ROLLBACK");
       return res.status(403).json({ message: "Forbidden - Only ADMIN can update users" });
     }
 
@@ -355,8 +406,9 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
     } = req.body;
 
     // Check if user exists
-    const existingUser = await pool.query("SELECT * FROM users WHERE user_id = $1", [targetId]);
+    const existingUser = await client.query("SELECT * FROM users WHERE user_id = $1", [targetId]);
     if (existingUser.rows.length === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -367,8 +419,9 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
 
     if (username) {
       // Check if username is already taken by another user
-      const usernameCheck = await pool.query("SELECT * FROM users WHERE username = $1 AND user_id != $2", [username, targetId]);
+      const usernameCheck = await client.query("SELECT * FROM users WHERE username = $1 AND user_id != $2", [username, targetId]);
       if (usernameCheck.rows.length > 0) {
+        await client.query("ROLLBACK");
         return res.status(400).json({ message: "Username already exists" });
       }
       updates.push(`username = $${paramCount++}`);
@@ -385,8 +438,9 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
     }
     if (email) {
       // Check if email is already taken by another user
-      const emailCheck = await pool.query("SELECT * FROM users WHERE email = $1 AND user_id != $2", [email, targetId]);
+      const emailCheck = await client.query("SELECT * FROM users WHERE email = $1 AND user_id != $2", [email, targetId]);
       if (emailCheck.rows.length > 0) {
+        await client.query("ROLLBACK");
         return res.status(400).json({ message: "Email already exists" });
       }
       updates.push(`email = $${paramCount++}`);
@@ -395,6 +449,7 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
     if (newRole) {
       const validRoles = ["ADMIN", "MANAGER", "ASSISTANT_MANAGER", "INSTRUCTOR", "STUDENT"];
       if (!validRoles.includes(normalizeRole(newRole))) {
+        await client.query("ROLLBACK");
         return res.status(400).json({ message: "Invalid role" });
       }
       updates.push(`role = $${paramCount++}`);
@@ -428,28 +483,358 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
     }
 
     if (updates.length === 0) {
+      await client.query("ROLLBACK");
       return res.status(400).json({ message: "No fields to update" });
     }
 
     values.push(targetId);
     const query = `UPDATE users SET ${updates.join(", ")} WHERE user_id = $${paramCount} RETURNING *`;
-    const result = await pool.query(query, values);
+    const result = await client.query(query, values);
+
+    // Update role-specific specialization tables
+    const currentRole = normalizeRole(existingUser.rows[0].role);
+    const updatedRole = newRole ? normalizeRole(newRole) : currentRole;
+
+    // If user is a MANAGER, also update managers table
+    if (currentRole === "MANAGER" || updatedRole === "MANAGER") {
+      const managerUpdates = [];
+      const managerValues = [];
+      let managerParamCount = 1;
+
+      if (username) {
+        managerUpdates.push(`username = $${managerParamCount++}`);
+        managerValues.push(username);
+      }
+      if (name) {
+        managerUpdates.push(`name = $${managerParamCount++}`);
+        managerValues.push(name);
+      }
+      if (surname) {
+        managerUpdates.push(`surname = $${managerParamCount++}`);
+        managerValues.push(surname);
+      }
+      if (email) {
+        managerUpdates.push(`email = $${managerParamCount++}`);
+        managerValues.push(email);
+      }
+      if (gender !== undefined) {
+        managerUpdates.push(`gender = $${managerParamCount++}`);
+        managerValues.push(gender || null);
+      }
+      if (birth_date !== undefined) {
+        managerUpdates.push(`birth_date = $${managerParamCount++}`);
+        managerValues.push(birth_date || null);
+      }
+      if (birth_place !== undefined) {
+        managerUpdates.push(`birth_place = $${managerParamCount++}`);
+        managerValues.push(birth_place || null);
+      }
+      if (phone_number !== undefined) {
+        managerUpdates.push(`phone_number = $${managerParamCount++}`);
+        managerValues.push(phone_number || null);
+      }
+      if (ssn !== undefined) {
+        managerUpdates.push(`ssn = $${managerParamCount++}`);
+        managerValues.push(ssn || null);
+      }
+
+      if (managerUpdates.length > 0) {
+        managerValues.push(targetId);
+        const managerQuery = `UPDATE managers SET ${managerUpdates.join(", ")} WHERE manager_id = $${managerParamCount}`;
+        await client.query(managerQuery, managerValues);
+        console.log("Manager record updated in managers table");
+      }
+
+      // If role is being changed to MANAGER, ensure manager record exists
+      if (updatedRole === "MANAGER" && currentRole !== "MANAGER") {
+        const managerExists = await client.query("SELECT 1 FROM managers WHERE manager_id = $1", [targetId]);
+        if (managerExists.rows.length === 0) {
+          // Create manager record
+          const updatedUser = await client.query("SELECT * FROM users WHERE user_id = $1", [targetId]);
+          if (updatedUser.rows.length > 0) {
+            const u = updatedUser.rows[0];
+            await client.query(
+              `INSERT INTO managers (
+                manager_id, username, name, surname, email, gender, 
+                birth_date, birth_place, phone_number, ssn, is_active
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+              [
+                targetId,
+                u.username,
+                u.name,
+                u.surname,
+                u.email,
+                u.gender || null,
+                u.birth_date || null,
+                u.birth_place || null,
+                u.phone_number || null,
+                u.ssn || null,
+                u.is_active !== undefined ? u.is_active : true,
+              ]
+            );
+            console.log("Manager record created in managers table for role change");
+          }
+        }
+      }
+    }
+
+    // If user is an ASSISTANT_MANAGER, also update assistant_managers table
+    if (currentRole === "ASSISTANT_MANAGER" || updatedRole === "ASSISTANT_MANAGER") {
+      const assistantManagerUpdates = [];
+      const assistantManagerValues = [];
+      let assistantManagerParamCount = 1;
+
+      if (username) {
+        assistantManagerUpdates.push(`username = $${assistantManagerParamCount++}`);
+        assistantManagerValues.push(username);
+      }
+      if (name) {
+        assistantManagerUpdates.push(`name = $${assistantManagerParamCount++}`);
+        assistantManagerValues.push(name);
+      }
+      if (surname) {
+        assistantManagerUpdates.push(`surname = $${assistantManagerParamCount++}`);
+        assistantManagerValues.push(surname);
+      }
+      if (email) {
+        assistantManagerUpdates.push(`email = $${assistantManagerParamCount++}`);
+        assistantManagerValues.push(email);
+      }
+      if (gender !== undefined) {
+        assistantManagerUpdates.push(`gender = $${assistantManagerParamCount++}`);
+        assistantManagerValues.push(gender || null);
+      }
+      if (birth_date !== undefined) {
+        assistantManagerUpdates.push(`birth_date = $${assistantManagerParamCount++}`);
+        assistantManagerValues.push(birth_date || null);
+      }
+      if (birth_place !== undefined) {
+        assistantManagerUpdates.push(`birth_place = $${assistantManagerParamCount++}`);
+        assistantManagerValues.push(birth_place || null);
+      }
+      if (phone_number !== undefined) {
+        assistantManagerUpdates.push(`phone_number = $${assistantManagerParamCount++}`);
+        assistantManagerValues.push(phone_number || null);
+      }
+      if (ssn !== undefined) {
+        assistantManagerUpdates.push(`ssn = $${assistantManagerParamCount++}`);
+        assistantManagerValues.push(ssn || null);
+      }
+
+      if (assistantManagerUpdates.length > 0) {
+        assistantManagerValues.push(targetId);
+        const assistantManagerQuery = `UPDATE assistant_managers SET ${assistantManagerUpdates.join(", ")} WHERE assistant_manager_id = $${assistantManagerParamCount}`;
+        await client.query(assistantManagerQuery, assistantManagerValues);
+        console.log("Assistant Manager record updated in assistant_managers table");
+      }
+
+      // If role is being changed to ASSISTANT_MANAGER, ensure assistant_manager record exists
+      if (updatedRole === "ASSISTANT_MANAGER" && currentRole !== "ASSISTANT_MANAGER") {
+        const assistantManagerExists = await client.query("SELECT 1 FROM assistant_managers WHERE assistant_manager_id = $1", [targetId]);
+        if (assistantManagerExists.rows.length === 0) {
+          // Create assistant_manager record
+          const updatedUser = await client.query("SELECT * FROM users WHERE user_id = $1", [targetId]);
+          if (updatedUser.rows.length > 0) {
+            const u = updatedUser.rows[0];
+            await client.query(
+              `INSERT INTO assistant_managers (
+                assistant_manager_id, username, name, surname, email, gender, 
+                birth_date, birth_place, phone_number, ssn, is_active
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+              [
+                targetId,
+                u.username,
+                u.name,
+                u.surname,
+                u.email,
+                u.gender || null,
+                u.birth_date || null,
+                u.birth_place || null,
+                u.phone_number || null,
+                u.ssn || null,
+                u.is_active !== undefined ? u.is_active : true,
+              ]
+            );
+            console.log("Assistant Manager record created in assistant_managers table for role change");
+          }
+        }
+      }
+    }
+
+    // If user is a STUDENT, also update students table
+    if (currentRole === "STUDENT" || updatedRole === "STUDENT") {
+      const studentUpdates = [];
+      const studentValues = [];
+      let studentParamCount = 1;
+
+      if (username) {
+        studentUpdates.push(`username = $${studentParamCount++}`);
+        studentValues.push(username);
+      }
+      if (name) {
+        studentUpdates.push(`name = $${studentParamCount++}`);
+        studentValues.push(name);
+      }
+      if (surname) {
+        studentUpdates.push(`surname = $${studentParamCount++}`);
+        studentValues.push(surname);
+      }
+      if (email) {
+        studentUpdates.push(`email = $${studentParamCount++}`);
+        studentValues.push(email);
+      }
+      if (gender !== undefined) {
+        studentUpdates.push(`gender = $${studentParamCount++}`);
+        studentValues.push(gender || null);
+      }
+      if (birth_date !== undefined) {
+        studentUpdates.push(`birth_date = $${studentParamCount++}`);
+        studentValues.push(birth_date || null);
+      }
+      if (birth_place !== undefined) {
+        studentUpdates.push(`birth_place = $${studentParamCount++}`);
+        studentValues.push(birth_place || null);
+      }
+      if (phone_number !== undefined) {
+        studentUpdates.push(`phone_number = $${studentParamCount++}`);
+        studentValues.push(phone_number || null);
+      }
+      if (ssn !== undefined) {
+        studentUpdates.push(`ssn = $${studentParamCount++}`);
+        studentValues.push(ssn || null);
+      }
+
+      if (studentUpdates.length > 0) {
+        studentValues.push(targetId);
+        const studentQuery = `UPDATE students SET ${studentUpdates.join(", ")} WHERE student_id = $${studentParamCount}`;
+        await client.query(studentQuery, studentValues);
+        console.log("Student record updated in students table");
+      }
+
+      // If role is being changed to STUDENT, ensure student record exists
+      if (updatedRole === "STUDENT" && currentRole !== "STUDENT") {
+        const Student = require("../models/Student");
+        const studentExists = await client.query("SELECT 1 FROM students WHERE student_id = $1", [targetId]);
+        if (studentExists.rows.length === 0) {
+          // Create student record
+          const updatedUser = await client.query("SELECT * FROM users WHERE user_id = $1", [targetId]);
+          if (updatedUser.rows.length > 0) {
+            const u = updatedUser.rows[0];
+            await Student.create(
+              targetId,
+              null, // father_name
+              null, // mother_name
+              null, // advisor_instructor_id
+              {
+                username: u.username,
+                name: u.name,
+                surname: u.surname,
+                email: u.email,
+                gender: u.gender,
+                birth_date: u.birth_date,
+                birth_place: u.birth_place,
+                phone_number: u.phone_number,
+                ssn: u.ssn,
+                is_active: u.is_active !== undefined ? u.is_active : true,
+              },
+              client
+            );
+            console.log("Student record created in students table for role change");
+          }
+        }
+      }
+    }
+
+    // If user is an INSTRUCTOR, also update instructors table
+    if (currentRole === "INSTRUCTOR" || updatedRole === "INSTRUCTOR") {
+      const instructorUpdates = [];
+      const instructorValues = [];
+      let instructorParamCount = 1;
+
+      if (username) {
+        instructorUpdates.push(`username = $${instructorParamCount++}`);
+        instructorValues.push(username);
+      }
+      if (name) {
+        instructorUpdates.push(`name = $${instructorParamCount++}`);
+        instructorValues.push(name);
+      }
+      if (surname) {
+        instructorUpdates.push(`surname = $${instructorParamCount++}`);
+        instructorValues.push(surname);
+      }
+      if (email) {
+        instructorUpdates.push(`email = $${instructorParamCount++}`);
+        instructorValues.push(email);
+      }
+
+      if (instructorUpdates.length > 0) {
+        instructorValues.push(targetId);
+        const instructorQuery = `UPDATE instructors SET ${instructorUpdates.join(", ")} WHERE instructor_id = $${instructorParamCount}`;
+        await client.query(instructorQuery, instructorValues);
+        console.log("Instructor record updated in instructors table");
+      }
+
+      // If role is being changed to INSTRUCTOR, ensure instructor record exists
+      if (updatedRole === "INSTRUCTOR" && currentRole !== "INSTRUCTOR") {
+        const instructorExists = await client.query("SELECT 1 FROM instructors WHERE instructor_id = $1", [targetId]);
+        if (instructorExists.rows.length === 0) {
+          // Create instructor record
+          const updatedUser = await client.query("SELECT * FROM users WHERE user_id = $1", [targetId]);
+          if (updatedUser.rows.length > 0) {
+            const u = updatedUser.rows[0];
+            await client.query(
+              `INSERT INTO instructors (
+                instructor_id, name, surname, username, email, title, bio, image, social_links
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+              ON CONFLICT (instructor_id) DO UPDATE SET
+                name = EXCLUDED.name,
+                surname = EXCLUDED.surname,
+                username = EXCLUDED.username,
+                email = EXCLUDED.email`,
+              [
+                targetId,
+                u.name,
+                u.surname,
+                u.username,
+                u.email,
+                null, // title
+                null, // bio
+                null, // image
+                null, // social_links
+              ]
+            );
+            console.log("Instructor record created in instructors table for role change");
+          }
+        }
+      }
+    }
+
+    await client.query("COMMIT");
+    console.log("Transaction committed successfully");
 
     res.json({
       message: "User updated successfully",
       user: result.rows[0],
     });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("PUT /users/:id error:", error);
     res.status(500).json({ message: "Server error" });
+  } finally {
+    client.release();
   }
 });
 
 // DELETE /api/users/:id - Delete user (ADMIN only)
 router.delete("/users/:id", authenticateToken, async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query("BEGIN");
+
     const role = normalizeRole(req.user.role);
     if (role !== "ADMIN") {
+      await client.query("ROLLBACK");
       return res.status(403).json({ message: "Forbidden - Only ADMIN can delete users" });
     }
 
@@ -457,22 +842,56 @@ router.delete("/users/:id", authenticateToken, async (req, res) => {
 
     // Prevent deleting yourself
     if (targetId === Number(req.user.id)) {
+      await client.query("ROLLBACK");
       return res.status(400).json({ message: "You cannot delete your own account" });
     }
 
     // Check if user exists
-    const user = await pool.query("SELECT * FROM users WHERE user_id = $1", [targetId]);
+    const user = await client.query("SELECT * FROM users WHERE user_id = $1", [targetId]);
     if (user.rows.length === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Delete user (cascade will handle related tables)
-    await pool.query("DELETE FROM users WHERE user_id = $1", [targetId]);
+    const userToDelete = user.rows[0];
+    const normalizedRoleToDelete = normalizeRole(userToDelete.role);
+
+    // Delete from role-specific specialization tables first
+    if (normalizedRoleToDelete === "MANAGER") {
+      await client.query("DELETE FROM managers WHERE manager_id = $1", [targetId]);
+      console.log(`Manager record for user_id ${targetId} deleted from managers table via /users DELETE`);
+    } else if (normalizedRoleToDelete === "ASSISTANT_MANAGER") {
+      await client.query("DELETE FROM assistant_managers WHERE assistant_manager_id = $1", [targetId]);
+      console.log(`Assistant Manager record for user_id ${targetId} deleted from assistant_managers table via /users DELETE`);
+    } else if (normalizedRoleToDelete === "INSTRUCTOR") {
+      // Delete from instructor_programs first (if any assignments exist)
+      try {
+        await client.query("DELETE FROM instructor_programs WHERE instructor_id = $1", [targetId]);
+      } catch (instructorProgramsDeleteError) {
+        console.warn("Could not delete from instructor_programs table:", instructorProgramsDeleteError.message);
+      }
+      await client.query("DELETE FROM instructors WHERE instructor_id = $1", [targetId]);
+      console.log(`Instructor record for user_id ${targetId} deleted from instructors table via /users DELETE`);
+    } else if (normalizedRoleToDelete === "STUDENT") {
+      await client.query("DELETE FROM student_programs WHERE student_id = $1", [targetId]);
+      await client.query("DELETE FROM students WHERE student_id = $1", [targetId]);
+      console.log(`Student record for user_id ${targetId} deleted from students table via /users DELETE`);
+    }
+
+    // Delete user from users table
+    await client.query("DELETE FROM users WHERE user_id = $1", [targetId]);
+    console.log(`User record for user_id ${targetId} deleted from users table`);
+
+    await client.query("COMMIT");
+    console.log("Transaction committed successfully");
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("DELETE /users/:id error:", error);
     res.status(500).json({ message: "Server error" });
+  } finally {
+    client.release();
   }
 });
 

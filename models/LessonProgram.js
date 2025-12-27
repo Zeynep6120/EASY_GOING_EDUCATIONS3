@@ -15,6 +15,28 @@ class LessonProgram {
       stop_time,
       final_term_id,
     ]);
+    
+    // Update the new record with program_id, day, time, and term
+    if (result.rows.length > 0) {
+      const newProgram = result.rows[0];
+      const updateQuery = `
+        UPDATE lesson_programs lp
+        SET 
+          program_id = lp.lesson_program_id,
+          day = lp.day_of_week,
+          time = CONCAT(lp.start_time::text, ' - ', lp.stop_time::text),
+          term = et.term_name
+        FROM education_terms et
+        WHERE lp.lesson_program_id = $1
+        AND lp.education_term_id = et.term_id
+        RETURNING lp.*, et.term_name
+      `;
+      const updateResult = await pool.query(updateQuery, [newProgram.lesson_program_id]);
+      if (updateResult.rows.length > 0) {
+        return updateResult.rows[0];
+      }
+    }
+    
     return result.rows[0];
   }
 
@@ -120,6 +142,7 @@ class LessonProgram {
         lp.start_time
     `;
     const result = await pool.query(query);
+    // course_id and course_name are already in lesson_programs table, so they're included in lp.*
     return result.rows;
   }
 
@@ -152,9 +175,30 @@ class LessonProgram {
   }
 
   static async addCourse(programId, courseId) {
-    const query =
-      "INSERT INTO program_courses (lesson_program_id, course_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *";
-    const result = await pool.query(query, [programId, courseId]);
+    // Insert into program_lessons (current system)
+    const insertQuery =
+      "INSERT INTO program_lessons (lesson_program_id, lesson_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *";
+    const result = await pool.query(insertQuery, [programId, courseId]);
+    
+    // Update lesson_programs with course information and ensure day, time, term are up to date
+    if (result.rows.length > 0) {
+      const updateQuery = `
+        UPDATE lesson_programs lp
+        SET 
+          course_id = c.course_id,
+          course_name = c.title,
+          program_id = lp.lesson_program_id,
+          day = lp.day_of_week,
+          time = CONCAT(lp.start_time::text, ' - ', lp.stop_time::text),
+          term = et.term_name
+        FROM courses c, education_terms et
+        WHERE lp.lesson_program_id = $1
+        AND c.course_id = $2
+        AND lp.education_term_id = et.term_id
+      `;
+      await pool.query(updateQuery, [programId, courseId]);
+    }
+    
     return result.rows[0];
   }
 
@@ -164,10 +208,37 @@ class LessonProgram {
   }
 
   static async removeCourse(programId, courseId) {
-    const q =
-      "DELETE FROM program_courses WHERE lesson_program_id = $1 AND course_id = $2 RETURNING *";
-    const r = await pool.query(q, [programId, courseId]);
-    return r.rows[0];
+    // Delete from program_lessons (current system)
+    const deleteQuery =
+      "DELETE FROM program_lessons WHERE lesson_program_id = $1 AND lesson_id = $2 RETURNING *";
+    const result = await pool.query(deleteQuery, [programId, courseId]);
+    
+    // Update lesson_programs - clear course info if no courses left, or update to first remaining course
+    // Also ensure day, time, term are up to date
+    if (result.rows.length > 0) {
+      const updateQuery = `
+        UPDATE lesson_programs lp
+        SET 
+          course_id = COALESCE(
+            (SELECT c.course_id FROM program_lessons pl JOIN courses c ON pl.lesson_id = c.course_id WHERE pl.lesson_program_id = lp.lesson_program_id LIMIT 1),
+            NULL
+          ),
+          course_name = COALESCE(
+            (SELECT c.title FROM program_lessons pl JOIN courses c ON pl.lesson_id = c.course_id WHERE pl.lesson_program_id = lp.lesson_program_id LIMIT 1),
+            NULL
+          ),
+          program_id = lp.lesson_program_id,
+          day = lp.day_of_week,
+          time = CONCAT(lp.start_time::text, ' - ', lp.stop_time::text),
+          term = et.term_name
+        FROM education_terms et
+        WHERE lp.lesson_program_id = $1
+        AND lp.education_term_id = et.term_id
+      `;
+      await pool.query(updateQuery, [programId]);
+    }
+    
+    return result.rows[0];
   }
 
   static async getLessons(programId) {
@@ -176,13 +247,26 @@ class LessonProgram {
   }
 
   static async getCourses(programId) {
-    const query = `
-      SELECT c.*
+    // Try program_lessons first (current system)
+    let query = `
+      SELECT c.course_id, c.title as course_name, c.title, c.description, c.duration, c.level
       FROM courses c
-      JOIN program_courses pc ON c.course_id = pc.course_id
-      WHERE pc.lesson_program_id = $1
+      JOIN program_lessons pl ON c.course_id = pl.lesson_id
+      WHERE pl.lesson_program_id = $1
     `;
-    const result = await pool.query(query, [programId]);
+    let result = await pool.query(query, [programId]);
+    
+    // If no results from program_lessons, try program_courses (backward compatibility)
+    if (result.rows.length === 0) {
+      query = `
+        SELECT c.course_id, c.title as course_name, c.title, c.description, c.duration, c.level
+        FROM courses c
+        JOIN program_courses pc ON c.course_id = pc.course_id
+        WHERE pc.lesson_program_id = $1
+      `;
+      result = await pool.query(query, [programId]);
+    }
+    
     return result.rows;
   }
 
@@ -266,6 +350,27 @@ class LessonProgram {
       final_term_id,
       programId,
     ]);
+    
+    // Update program_id, day, time, and term columns
+    if (result.rows.length > 0) {
+      const updateQuery = `
+        UPDATE lesson_programs lp
+        SET 
+          program_id = lp.lesson_program_id,
+          day = lp.day_of_week,
+          time = CONCAT(lp.start_time::text, ' - ', lp.stop_time::text),
+          term = et.term_name
+        FROM education_terms et
+        WHERE lp.lesson_program_id = $1
+        AND lp.education_term_id = et.term_id
+        RETURNING lp.*, et.term_name
+      `;
+      const updateResult = await pool.query(updateQuery, [programId]);
+      if (updateResult.rows.length > 0) {
+        return updateResult.rows[0];
+      }
+    }
+    
     return result.rows[0];
   }
 

@@ -89,33 +89,61 @@ async function loadPrograms() {
 
 // Load student programs
 async function loadStudentPrograms() {
+  const messageEl = document.getElementById("studentProgramMessage");
   try {
+    // Check if user is logged in
+    if (!isLoggedIn()) {
+      showMessage(messageEl, "Please login to view student programs", "error");
+      setTimeout(() => {
+        window.location.href = "/index.html";
+      }, 2000);
+      return;
+    }
+
     const res = await fetch(API_BASE, {
       headers: getAuthHeaders(),
     });
 
     if (!res.ok) {
+      // Handle 401 Unauthorized (invalid token)
+      if (res.status === 401) {
+        showMessage(messageEl, "Session expired. Please login again.", "error");
+        setTimeout(() => {
+          logout();
+        }, 2000);
+        return;
+      }
+
       const errorData = await res.json().catch(() => ({ message: "Failed to load student programs" }));
-      throw new Error(errorData.message || errorData.error || `HTTP ${res.status}: Failed to load student programs`);
+      const errorMessage = errorData.message || errorData.error || `HTTP ${res.status}: Failed to load student programs`;
+      throw new Error(errorMessage);
     }
 
     const data = await res.json();
     const studentPrograms = Array.isArray(data) ? data : [];
+    
+    console.log("Loaded student programs:", studentPrograms); // Debug log
+    
     displayStudentPrograms(studentPrograms);
     
     // Clear any previous error messages on success
-    const messageEl = document.getElementById("studentProgramMessage");
-    if (messageEl && studentPrograms.length > 0) {
+    if (messageEl) {
       messageEl.textContent = "";
       messageEl.className = "message";
     }
   } catch (error) {
     console.error("Error loading student programs:", error);
-    showMessage(
-      document.getElementById("studentProgramMessage"),
-      "Error loading student programs: " + error.message,
-      "error"
-    );
+    const errorMessage = error.message || "Failed to load student programs. Please check your permissions and try again.";
+    
+    // Check if it's a token-related error
+    if (errorMessage.toLowerCase().includes("token") || errorMessage.toLowerCase().includes("unauthorized")) {
+      showMessage(messageEl, "Session expired. Please login again.", "error");
+      setTimeout(() => {
+        logout();
+      }, 2000);
+    } else {
+      showMessage(messageEl, errorMessage, "error");
+    }
   }
 }
 
@@ -125,35 +153,63 @@ function displayStudentPrograms(studentPrograms) {
   if (!tbody) return;
 
   if (studentPrograms.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='9'>No student programs found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='13'>No student programs found</td></tr>";
     return;
   }
 
-  tbody.innerHTML = studentPrograms
-    .map(
-      (sp) => {
-        const coursesList = sp.courses && sp.courses.length > 0 
-          ? sp.courses.map(c => c.course_name || c.title || "N/A").join(", ")
-          : "No courses assigned";
-        
-        return `
+  // Build rows - each course should be on a separate row
+  let rows = [];
+  
+  studentPrograms.forEach((sp) => {
+    // If there are courses, create a row for each course
+    if (sp.courses && sp.courses.length > 0) {
+      sp.courses.forEach((course, index) => {
+        const isFirstCourse = index === 0;
+        rows.push(`
+    <tr>
+      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.student_id}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.student_name || ""}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.student_surname || ""}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.student_email || ""}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.student_username || ""}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.lesson_program_id}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.day_of_week || ""}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${formatTime(sp.start_time)} - ${formatTime(sp.stop_time)}</td>` : ''}
+      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.term_name || ""}</td>` : ''}
+      <td>${course.course_id || ""}</td>
+      <td>${course.course_name || course.title || "N/A"}</td>
+      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">
+        <button class="btn-small btn-edit" onclick="editStudentProgram(${sp.student_id}, ${sp.lesson_program_id})" style="margin-right: 5px;">Edit</button>
+        <button class="btn-small btn-delete" onclick="deleteStudentProgram(${sp.student_id}, ${sp.lesson_program_id})">Delete</button>
+      </td>` : ''}
+    </tr>
+  `);
+      });
+    } else {
+      // No courses assigned
+      rows.push(`
     <tr>
       <td>${sp.student_id}</td>
-      <td>${sp.student_full_name || (sp.student_name || "") + " " + (sp.student_surname || "")}</td>
+      <td>${sp.student_name || ""}</td>
+      <td>${sp.student_surname || ""}</td>
       <td>${sp.student_email || ""}</td>
+      <td>${sp.student_username || ""}</td>
       <td>${sp.lesson_program_id}</td>
       <td>${sp.day_of_week || ""}</td>
       <td>${formatTime(sp.start_time)} - ${formatTime(sp.stop_time)}</td>
       <td>${sp.term_name || ""}</td>
-      <td>${coursesList}</td>
+      <td>-</td>
+      <td>-</td>
       <td>
+        <button class="btn-small btn-edit" onclick="editStudentProgram(${sp.student_id}, ${sp.lesson_program_id})" style="margin-right: 5px;">Edit</button>
         <button class="btn-small btn-delete" onclick="deleteStudentProgram(${sp.student_id}, ${sp.lesson_program_id})">Delete</button>
       </td>
     </tr>
-  `;
-      }
-    )
-    .join("");
+  `);
+    }
+  });
+  
+  tbody.innerHTML = rows.join("");
 }
 
 // Setup modal
@@ -182,6 +238,10 @@ function setupModal() {
   });
 }
 
+// Global variables for edit mode
+let editingStudentId = null;
+let editingLessonProgramId = null;
+
 // Setup form
 function setupForm() {
   const addBtn = document.getElementById("addStudentProgramBtn");
@@ -189,6 +249,8 @@ function setupForm() {
 
   if (addBtn) {
     addBtn.addEventListener("click", () => {
+      editingStudentId = null;
+      editingLessonProgramId = null;
       document.getElementById("modalTitle").textContent = "Add Student Program";
       document.getElementById("studentProgramForm").reset();
       document.getElementById("studentProgramModal").style.display = "block";
@@ -216,29 +278,64 @@ async function handleSubmit(e) {
   }
 
   try {
-    showMessage(messageEl, "Creating student program...", "success");
+    if (editingStudentId && editingLessonProgramId) {
+      // Update mode
+      showMessage(messageEl, "Updating student program...", "success");
 
-    const res = await fetch(API_BASE, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(formData),
-    });
+      const res = await fetch(`${API_BASE}/${editingStudentId}/${editingLessonProgramId}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(formData),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      showMessage(messageEl, data.message || data.error || "Operation failed", "error");
-      return;
+      if (!res.ok) {
+        showMessage(messageEl, data.message || data.error || "Operation failed", "error");
+        return;
+      }
+
+      showMessage(messageEl, "Student program updated successfully", "success");
+    } else {
+      // Create mode
+      showMessage(messageEl, "Creating student program...", "success");
+
+      const res = await fetch(API_BASE, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMessage(messageEl, data.message || data.error || "Operation failed", "error");
+        return;
+      }
+
+      showMessage(messageEl, "Student program created successfully", "success");
     }
 
-    showMessage(messageEl, "Student program created successfully", "success");
     document.getElementById("studentProgramModal").style.display = "none";
     document.getElementById("studentProgramForm").reset();
+    editingStudentId = null;
+    editingLessonProgramId = null;
     loadStudentPrograms();
   } catch (error) {
     console.error("Error saving student program:", error);
     showMessage(messageEl, "Error saving student program: " + error.message, "error");
   }
+}
+
+// Edit student program
+window.editStudentProgram = async function editStudentProgram(studentId, lessonProgramId) {
+  editingStudentId = studentId;
+  editingLessonProgramId = lessonProgramId;
+
+  document.getElementById("modalTitle").textContent = "Edit Student Program";
+  document.getElementById("studentId").value = studentId;
+  document.getElementById("lessonProgramId").value = lessonProgramId;
+  document.getElementById("studentProgramModal").style.display = "block";
 }
 
 // Delete student program
