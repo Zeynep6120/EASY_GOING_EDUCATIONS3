@@ -42,7 +42,7 @@ router.get("/courses/:id", async (req, res) => {
 // Instructors endpoint - returns instructors from both instructors table and users table (role=INSTRUCTOR)
 router.get("/instructors", async (req, res) => {
   try {
-    // Get instructors from instructors table
+    // Get instructors ONLY from instructors table (not from users table)
     let instructors = [];
     try {
       instructors = await Instructor.getAll();
@@ -52,9 +52,12 @@ router.get("/instructors", async (req, res) => {
       // Continue even if instructors table doesn't exist
     }
     
-    // Get instructors from users table (role=INSTRUCTOR) and format as instructors
-    // Only add instructors that are NOT already in instructors table (by name matching)
+    // DISABLED: Get instructors from users table (role=INSTRUCTOR)
+    // Only use instructors from instructors table to avoid duplicates
     let userInstructors = [];
+    
+    // Skip loading from users table - only use instructors table
+    if (false) { // Disabled: was loading from users table
     try {
       // Create a set of instructor names for duplicate checking (case-insensitive)
       const instructorNames = new Set(
@@ -195,80 +198,39 @@ router.get("/instructors", async (req, res) => {
       console.error("Error details:", instructorError.message);
       // Continue with instructors only
     }
+    } // End of disabled users table loading
     
-    // Prioritize instructors table data, then add user instructors that don't exist in instructors
-    // Use a Map to track by name to avoid duplicates (case-insensitive, normalized)
-    const instructorsMap = new Map();
-    
-    // Normalize name for comparison (remove extra spaces, lowercase)
-    const normalizeName = (name) => {
-      if (!name) return '';
-      return name.toLowerCase().trim().replace(/\s+/g, ' ');
-    };
-    
-    // First, add all instructors (they have priority)
-    instructors.forEach(inst => {
-      const normalizedName = normalizeName(inst.name);
-      if (normalizedName && !instructorsMap.has(normalizedName)) {
-        instructorsMap.set(normalizedName, inst);
-      }
-    });
-    
-    // Then, add user instructors that don't exist in instructors
-    // Check both full name and first+last name combinations
-    if (Array.isArray(userInstructors) && userInstructors.length > 0) {
-      userInstructors.forEach(instructor => {
-        const instructorFullName = normalizeName(instructor.name);
-        const instructorFirstName = normalizeName(instructor.first_name);
-        const instructorLastName = normalizeName(instructor.last_name);
-        
-        // Check if this instructor already exists in instructors
-        let isDuplicate = false;
-        
-        // Check exact match
-        if (instructorFullName && instructorsMap.has(instructorFullName)) {
-          isDuplicate = true;
-        }
-        
-        // Check if any instructor name matches this instructor's name parts
-        if (!isDuplicate) {
-          for (const [instName, inst] of instructorsMap) {
-            // Check if instructor name contains instructor's first and last name
-            if (instructorFirstName && instructorLastName) {
-              if (instName.includes(instructorFirstName) && instName.includes(instructorLastName)) {
-                isDuplicate = true;
-                break;
-              }
-            }
-            // Check if instructor name contains instructor name parts
-            const instParts = instName.split(/\s+/);
-            if (instParts.length >= 2 && instructorFullName.includes(instParts[0]) && instructorFullName.includes(instParts[instParts.length - 1])) {
-              isDuplicate = true;
-              break;
-            }
-          }
-        }
-        
-        // Only add if not duplicate
-        if (!isDuplicate && instructorFullName) {
-          instructorsMap.set(instructorFullName, instructor);
-        }
-      });
-    }
-    
-    // Convert map back to array
-    let allInstructors = Array.from(instructorsMap.values());
+    // Use ONLY instructors from instructors table (no users table merging)
+    // Simply use the instructors array directly
+    let allInstructors = instructors;
     
     console.log(`Total unique instructors to return: ${allInstructors.length}`);
     
     // Assign unique images to all instructors
     // Ensure no duplicate images are used
+    // BUT: If instructor already has an image, use that instead
     const allImageOptions = ['instructor-01.jpg', 'instructor-02.jpg', 'instructor-03.jpg', 'instructor-04.jpg', 'instructor-05.jpg', 'instructor-06.jpg'];
     const usedImages = new Set();
     let imageIndex = 0;
     
+    // First, collect all images that are already assigned (from database)
+    allInstructors.forEach(inst => {
+      if (inst.image && inst.image.trim()) {
+        usedImages.add(inst.image);
+      }
+    });
+    
     // Assign images sequentially to ensure uniqueness
     allInstructors = allInstructors.map((inst, index) => {
+      // If instructor already has an image, use it
+      if (inst.image && inst.image.trim()) {
+        return {
+          ...inst,
+          image: inst.image
+        };
+      }
+      
+      // Otherwise, assign a unique image from the pool
       let assignedImage;
       
       // Try to assign a unique image from the pool
