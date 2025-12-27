@@ -64,14 +64,15 @@ function displayLessons(lessons) {
   if (!tbody) return;
 
   if (lessons.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='5'>No lessons found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='6'>No lessons found</td></tr>";
     return;
   }
 
   tbody.innerHTML = lessons
     .map(
-      (lesson) => `
+      (lesson, index) => `
     <tr>
+      <td>${index + 1}</td>
       <td>${lesson.lesson_id || lesson.id}</td>
       <td>${lesson.lesson_name || lesson.lessonName}</td>
       <td>${lesson.credit_score || lesson.creditScore || 0}</td>

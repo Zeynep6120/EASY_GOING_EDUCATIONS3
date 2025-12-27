@@ -171,12 +171,13 @@ function displayInstructorPrograms(instructorPrograms) {
   if (!tbody) return;
 
   if (instructorPrograms.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='13'>No instructor programs found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='14'>No instructor programs found</td></tr>";
     return;
   }
 
   // Build rows - each course should be on a separate row
   let rows = [];
+  let rowNumber = 1;
   
   instructorPrograms.forEach((ip) => {
     // Debug: Log each instructor program to see what data we have
@@ -196,6 +197,7 @@ function displayInstructorPrograms(instructorPrograms) {
     if (!ip.course_program_id) {
       rows.push(`
     <tr>
+      <td>${rowNumber++}</td>
       <td>${ip.instructor_id || ""}</td>
       <td>${ip.instructor_name || ip.instructor_full_name?.split(' ')[0] || ""}</td>
       <td>${ip.instructor_surname || ip.instructor_full_name?.split(' ').slice(1).join(' ') || ""}</td>
@@ -220,6 +222,7 @@ function displayInstructorPrograms(instructorPrograms) {
         const isFirstCourse = index === 0;
         rows.push(`
     <tr>
+      ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${rowNumber}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_id || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_name || ip.instructor_full_name?.split(' ')[0] || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${ip.courses.length}">${ip.instructor_surname || ip.instructor_full_name?.split(' ').slice(1).join(' ') || ""}</td>` : ''}
@@ -238,10 +241,14 @@ function displayInstructorPrograms(instructorPrograms) {
     </tr>
   `);
       });
+      if (isFirstCourse) {
+        rowNumber += ip.courses.length;
+      }
     } else {
       // No courses assigned
       rows.push(`
     <tr>
+      <td>${rowNumber++}</td>
       <td>${ip.instructor_id || ""}</td>
       <td>${ip.instructor_name || ip.instructor_full_name?.split(' ')[0] || ""}</td>
       <td>${ip.instructor_surname || ip.instructor_full_name?.split(' ').slice(1).join(' ') || ""}</td>

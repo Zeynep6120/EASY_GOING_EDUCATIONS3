@@ -77,19 +77,20 @@ function displayManagers(managers) {
   const isAdmin = currentUser && currentUser.role === "ADMIN";
 
   if (managers.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='6'>No managers found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='7'>No managers found</td></tr>";
     return;
   }
 
   tbody.innerHTML = managers
     .map(
-      (manager) => {
+      (manager, index) => {
         const isOwnData = currentUser && (currentUser.id === manager.user_id || currentUser.user_id === manager.user_id);
         // Only show edit/delete buttons if it's own data or user is ADMIN
         const showActions = isOwnData || isAdmin;
         
         return `
     <tr>
+      <td>${index + 1}</td>
       <td>${manager.user_id || manager.id}</td>
       <td>${manager.username}</td>
       <td>${manager.name}</td>

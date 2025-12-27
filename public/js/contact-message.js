@@ -101,14 +101,15 @@ function displayContactMessages(messages) {
   if (!tbody) return;
 
   if (messages.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='7'>No contact messages found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='8'>No contact messages found</td></tr>";
     return;
   }
 
   tbody.innerHTML = messages
     .map(
-      (message) => `
+      (message, index) => `
     <tr>
+      <td>${index + 1}</td>
       <td>${message.id || message.message_id}</td>
       <td>${message.name || ""}</td>
       <td>${message.email || ""}</td>

@@ -178,14 +178,15 @@ function displayStudents(students) {
   if (!tbody) return;
 
   if (students.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='9'>No students found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='10'>No students found</td></tr>";
     return;
   }
 
   tbody.innerHTML = students
     .map(
-      (student) => `
+      (student, index) => `
     <tr>
+      <td>${index + 1}</td>
       <td>${student.user_id || student.id || student.student_id}</td>
       <td>${student.username}</td>
       <td>${student.name}</td>

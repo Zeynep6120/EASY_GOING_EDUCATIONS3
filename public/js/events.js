@@ -58,14 +58,15 @@ function displayEvents(events) {
   if (!tbody) return;
 
   if (events.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='6'>No events found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='7'>No events found</td></tr>";
     return;
   }
 
   tbody.innerHTML = events
     .map(
-      (event) => `
+      (event, index) => `
     <tr>
+      <td>${index + 1}</td>
       <td>${event.event_id || event.id}</td>
       <td>${event.title || ""}</td>
       <td>${event.time ? formatDate(event.time) : ""}</td>

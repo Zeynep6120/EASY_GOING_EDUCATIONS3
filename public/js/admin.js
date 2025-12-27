@@ -64,14 +64,15 @@ function displayAdmins(admins) {
   if (!tbody) return;
 
   if (admins.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='6'>No admins found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='7'>No admins found</td></tr>";
     return;
   }
 
   tbody.innerHTML = admins
     .map(
-      (admin) => `
+      (admin, index) => `
     <tr>
+      <td>${index + 1}</td>
       <td>${admin.user_id || admin.id}</td>
       <td>${admin.username}</td>
       <td>${admin.name}</td>

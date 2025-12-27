@@ -153,12 +153,13 @@ function displayStudentPrograms(studentPrograms) {
   if (!tbody) return;
 
   if (studentPrograms.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='13'>No student programs found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='14'>No student programs found</td></tr>";
     return;
   }
 
   // Build rows - each course should be on a separate row
   let rows = [];
+  let rowNumber = 1;
   
   studentPrograms.forEach((sp) => {
     // If there are courses, create a row for each course
@@ -167,6 +168,7 @@ function displayStudentPrograms(studentPrograms) {
         const isFirstCourse = index === 0;
         rows.push(`
     <tr>
+      ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${rowNumber}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.student_id}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.student_name || ""}</td>` : ''}
       ${isFirstCourse ? `<td rowspan="${sp.courses.length}">${sp.student_surname || ""}</td>` : ''}
@@ -185,10 +187,14 @@ function displayStudentPrograms(studentPrograms) {
     </tr>
   `);
       });
+      if (isFirstCourse) {
+        rowNumber += sp.courses.length;
+      }
     } else {
       // No courses assigned
       rows.push(`
     <tr>
+      <td>${rowNumber++}</td>
       <td>${sp.student_id}</td>
       <td>${sp.student_name || ""}</td>
       <td>${sp.student_surname || ""}</td>

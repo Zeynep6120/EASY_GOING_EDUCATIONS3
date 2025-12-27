@@ -58,14 +58,15 @@ function displaySlides(slides) {
   if (!tbody) return;
 
   if (slides.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='5'>No slides found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='6'>No slides found</td></tr>";
     return;
   }
 
   tbody.innerHTML = slides
     .map(
-      (slide) => `
+      (slide, index) => `
     <tr>
+      <td>${index + 1}</td>
       <td>${slide.slide_id || slide.id}</td>
       <td>${slide.title || ""}</td>
       <td>${(slide.description || "").substring(0, 50)}${(slide.description || "").length > 50 ? "..." : ""}</td>

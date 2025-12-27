@@ -78,19 +78,20 @@ function displayAssistantManagers(assistantManagers) {
   const isAdmin = currentUser && currentUser.role === "ADMIN";
 
   if (assistantManagers.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='6'>No assistant managers found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='7'>No assistant managers found</td></tr>";
     return;
   }
 
   tbody.innerHTML = assistantManagers
     .map(
-      (assistantManager) => {
+      (assistantManager, index) => {
         const isOwnData = currentUser && (currentUser.id === assistantManager.user_id || currentUser.user_id === assistantManager.user_id);
         // Only show edit/delete buttons if it's own data or user is ADMIN
         const showActions = isOwnData || isAdmin;
         
         return `
     <tr>
+      <td>${index + 1}</td>
       <td>${assistantManager.user_id || assistantManager.id}</td>
       <td>${assistantManager.username}</td>
       <td>${assistantManager.name}</td>

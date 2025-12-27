@@ -152,8 +152,9 @@ async function displayPrograms(programs) {
 
   tbody.innerHTML = programsWithCourses
     .map(
-      (program) => `
+      (program, index) => `
     <tr>
+      <td>${index + 1}</td>
       <td>${program.id || program.course_program_id}</td>
       <td>${program.day || program.day_of_week || ""}</td>
       <td>${program.start_time || ""}</td>

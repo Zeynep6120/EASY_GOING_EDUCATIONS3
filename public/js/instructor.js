@@ -73,14 +73,15 @@ function displayInstructors(instructors) {
   if (!tbody) return;
 
   if (instructors.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='8'>No instructors found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='9'>No instructors found</td></tr>";
     return;
   }
 
   tbody.innerHTML = instructors
     .map(
-      (instructor) => `
+      (instructor, index) => `
     <tr>
+      <td>${index + 1}</td>
       <td>${instructor.user_id || instructor.id || instructor.instructor_id}</td>
       <td>${instructor.username || ""}</td>
       <td>${instructor.name || ""}</td>

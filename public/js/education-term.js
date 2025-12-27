@@ -102,14 +102,15 @@ function displayTerms(terms) {
   if (!tbody) return;
 
   if (terms.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='5'>No education terms found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='6'>No education terms found</td></tr>";
     return;
   }
 
   tbody.innerHTML = terms
     .map(
-      (term) => `
+      (term, index) => `
     <tr>
+      <td>${index + 1}</td>
       <td>${term.term_id || term.id}</td>
       <td>${term.term_name || term.termName}</td>
       <td>${term.start_date ? formatDate(term.start_date) : ""}</td>

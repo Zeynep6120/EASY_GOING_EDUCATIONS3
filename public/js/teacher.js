@@ -67,14 +67,15 @@ function displayTeachers(teachers) {
   if (!tbody) return;
 
   if (teachers.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='7'>No teachers found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='8'>No teachers found</td></tr>";
     return;
   }
 
   tbody.innerHTML = teachers
     .map(
-      (teacher) => `
+      (teacher, index) => `
     <tr>
+      <td>${index + 1}</td>
       <td>${teacher.user_id || teacher.id || teacher.teacher_id}</td>
       <td>${teacher.username}</td>
       <td>${teacher.name}</td>

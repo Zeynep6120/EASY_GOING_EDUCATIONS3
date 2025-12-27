@@ -66,14 +66,15 @@ function displayUsers(users) {
   if (!tbody) return;
 
   if (users.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='8'>No users found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='9'>No users found</td></tr>";
     return;
   }
 
   tbody.innerHTML = users
     .map(
-      (user) => `
+      (user, index) => `
     <tr>
+      <td>${index + 1}</td>
       <td>${user.user_id || user.id}</td>
       <td>${user.username || ""}</td>
       <td>${user.name || ""}</td>

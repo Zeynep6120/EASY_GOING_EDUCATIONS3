@@ -77,13 +77,13 @@ function displayCourses(courses) {
   if (!tbody) return;
 
   if (courses.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='5'>No courses found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='6'>No courses found</td></tr>";
     return;
   }
 
   tbody.innerHTML = courses
     .map(
-      (course) => {
+      (course, index) => {
         // Support both lesson format (from /api/lessons) and course format
         const courseId = course.lesson_id || course.course_id || course.id;
         const courseName = course.lesson_name || course.title || course.course_name || "";
@@ -92,6 +92,7 @@ function displayCourses(courses) {
         
         return `
     <tr>
+      <td>${index + 1}</td>
       <td>${courseId}</td>
       <td>${courseName}</td>
       <td>${creditScore}</td>

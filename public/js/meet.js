@@ -72,7 +72,7 @@ async function displayMeets(meets) {
   if (!tbody) return;
 
   if (meets.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='6' style='padding: 1rem; text-align: center;'>No meets found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='7' style='padding: 1rem; text-align: center;'>No meets found</td></tr>";
     return;
   }
 
@@ -100,8 +100,9 @@ async function displayMeets(meets) {
 
   tbody.innerHTML = meetsWithCounts
     .map(
-      (meet) => `
+      (meet, index) => `
     <tr style="border-bottom: 1px solid #eee;">
+      <td style="padding: 0.75rem;">${index + 1}</td>
       <td style="padding: 0.75rem;">${meet.meet_id}</td>
       <td style="padding: 0.75rem;">${formatDate(meet.date)}</td>
       <td style="padding: 0.75rem;">${formatTime(meet.start_time)} - ${formatTime(meet.stop_time)}</td>
