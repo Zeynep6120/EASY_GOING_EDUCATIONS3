@@ -2,6 +2,12 @@ const express = require("express");
 const AuthService = require("../services/authService");
 const { sendSuccess, sendError } = require("../utils/response");
 const authenticateToken = require("../middleware/auth");
+const pool = require("../../db/connection");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const User = require("../repositories/User");
+const Student = require("../repositories/Student");
+const InstructorUser = require("../repositories/InstructorUser");
 
 const router = express.Router();
 

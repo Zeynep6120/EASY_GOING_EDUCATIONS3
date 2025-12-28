@@ -76,17 +76,64 @@ class AuthService {
       // Create role-specific records
       const normalizedRole = userData.role.toUpperCase();
       
-      if (normalizedRole === "INSTRUCTOR") {
-        await InstructorUser.create({
-          instructor_id: user.user_id,
-          name: user.name,
-          surname: user.surname,
-          username: user.username,
-          email: user.email,
-          title: userData.title || null,
-          bio: userData.bio || null,
-          is_advisor_instructor: userData.is_advisor_instructor || false
-        }, db);
+      if (normalizedRole === "MANAGER") {
+        await db.query(
+          `INSERT INTO managers (
+            manager_id, username, name, surname, email, gender, 
+            birth_date, birth_place, phone_number, ssn, is_active
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          [
+            user.user_id,
+            user.username,
+            user.name,
+            user.surname,
+            user.email,
+            user.gender || null,
+            user.birth_date || null,
+            user.birth_place || null,
+            user.phone_number || null,
+            user.ssn || null,
+            user.is_active !== undefined ? user.is_active : true,
+          ]
+        );
+      } else if (normalizedRole === "ASSISTANT_MANAGER") {
+        await db.query(
+          `INSERT INTO assistant_managers (
+            assistant_manager_id, username, name, surname, email, gender, 
+            birth_date, birth_place, phone_number, ssn, is_active
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          [
+            user.user_id,
+            user.username,
+            user.name,
+            user.surname,
+            user.email,
+            user.gender || null,
+            user.birth_date || null,
+            user.birth_place || null,
+            user.phone_number || null,
+            user.ssn || null,
+            user.is_active !== undefined ? user.is_active : true,
+          ]
+        );
+      } else if (normalizedRole === "INSTRUCTOR") {
+        await InstructorUser.create(
+          user.user_id,
+          userData.is_advisor_instructor || false,
+          {
+            username: user.username,
+            name: user.name,
+            surname: user.surname,
+            email: user.email,
+            gender: user.gender,
+            birth_date: user.birth_date,
+            birth_place: user.birth_place,
+            phone_number: user.phone_number,
+            ssn: user.ssn,
+            is_active: user.is_active,
+          },
+          db
+        );
       } else if (normalizedRole === "STUDENT") {
         // Check if advisor instructor exists (if provided)
         if (userData.advisor_instructor_id) {
@@ -137,8 +184,16 @@ class AuthService {
    * Login user
    */
   static async login(username, password) {
-    // Find user
-    const user = await User.findByUsername(username);
+    // Find user - try exact match first, then case-insensitive
+    let user = await User.findByUsername(username);
+    if (!user) {
+      const result = await pool.query(
+        "SELECT * FROM users WHERE LOWER(username) = LOWER($1)",
+        [username]
+      );
+      user = result.rows[0] || null;
+    }
+
     if (!user) {
       throw new Error("Invalid credentials");
     }
@@ -146,6 +201,11 @@ class AuthService {
     // Check if user is active
     if (!user.is_active) {
       throw new Error("Account is deactivated");
+    }
+
+    // Check if user has a password
+    if (!user.password) {
+      throw new Error("Invalid credentials");
     }
 
     // Handle password verification
@@ -160,15 +220,6 @@ class AuthService {
       const userPassword = String(user.password || "").trim();
       const inputPassword = String(password || "").trim();
       isPasswordValid = userPassword === inputPassword;
-      
-      // If password matches and is plain text, hash it for future use
-      if (isPasswordValid) {
-        const hashedPassword = await hashPassword(password);
-        await pool.query("UPDATE users SET password = $1 WHERE user_id = $2", [
-          hashedPassword,
-          user.user_id
-        ]);
-      }
     }
 
     if (!isPasswordValid) {
@@ -182,16 +233,30 @@ class AuthService {
       role: user.role
     });
 
-    // Get additional user info based on role
-    let additionalInfo = {};
-    if (user.role === "STUDENT") {
-      const advisorCheck = await pool.query(
-        "SELECT advisor_instructor_id FROM students WHERE student_id = $1",
-        [user.user_id]
-      );
-      if (advisorCheck.rows.length > 0) {
-        additionalInfo.advisor_instructor_id = advisorCheck.rows[0].advisor_instructor_id;
+    // Get role-specific data
+    let roleData = {};
+    try {
+      if (user.role === "INSTRUCTOR") {
+        const advisorCheck = await pool.query(
+          "SELECT EXISTS (SELECT 1 FROM students WHERE advisor_instructor_id = $1) as is_advisor",
+          [user.user_id]
+        );
+        roleData = { is_advisor_instructor: advisorCheck.rows[0]?.is_advisor || false };
+      } else if (user.role === "STUDENT") {
+        const student = await Student.findById(user.user_id);
+        if (student) {
+          roleData = {
+            father_name: student.father_name || null,
+            mother_name: student.mother_name || null,
+            advisor_instructor_id: student.advisor_instructor_id || null,
+            advisor_name: student.advisor_name || null,
+            advisor_surname: student.advisor_surname || null,
+          };
+        }
       }
+    } catch (roleError) {
+      console.error("Error loading role-specific data:", roleError);
+      roleData = {};
     }
 
     return {
@@ -203,7 +268,12 @@ class AuthService {
         surname: user.surname,
         email: user.email,
         role: user.role,
-        ...additionalInfo
+        gender: user.gender || null,
+        birth_date: user.birth_date || null,
+        birth_place: user.birth_place || null,
+        phone_number: user.phone_number || null,
+        ssn: user.ssn || null,
+        ...roleData
       }
     };
   }

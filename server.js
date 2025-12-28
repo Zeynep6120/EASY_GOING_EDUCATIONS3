@@ -4,24 +4,8 @@ require("dotenv").config();
 
 const initializeDatabase = require("./db/init");
 
-// Routes
-const authRoutes = require("./routes/auth");
-const adminRoutes = require("./routes/admin");
-const managerRoutes = require("./routes/manager");
-const assistantManagerRoutes = require("./routes/assistant-manager");
-const instructorRoutes = require("./routes/instructor");
-const studentRoutes = require("./routes/student");
-const advisorInstructorRoutes = require("./routes/advisor-instructor");
-const usersRoutes = require("./routes/users");
-const termsRoutes = require("./routes/terms");
-const lessonsRoutes = require("./routes/lessons");
-const lessonProgramsRoutes = require("./routes/lesson-programs");
-// const studentInfoRoutes = require("./routes/student-info"); // Removed: student_info table merged into students
-const meetsRoutes = require("./routes/meets");
-const instructorProgramsRoutes = require("./routes/instructor-programs");
-const studentProgramsRoutes = require("./routes/student-programs");
-const contentRoutes = require("./routes/content");
-const contactRoutes = require("./routes/contact");
+// Routes - Using layered architecture: Routes -> Controllers -> Services -> Repositories
+const apiRoutes = require("./src/routes");
 
 const app = express();
 const net = require("net");
@@ -39,29 +23,8 @@ initializeDatabase()
     console.error("Database initialization error:", error);
   });
 
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/dean", managerRoutes);
-app.use("/api/vicedean", assistantManagerRoutes);
-app.use("/api/instructors", instructorRoutes);
-app.use("/api/students", studentRoutes);
-app.use("/api/advisor-instructor", advisorInstructorRoutes);
-app.use("/api", usersRoutes);
-app.use("/api", termsRoutes);
-app.use("/api", lessonsRoutes);
-app.use("/api", lessonProgramsRoutes);
-// app.use("/api", studentInfoRoutes); // Removed: student_info table merged into students
-app.use("/api", meetsRoutes);
-// Instructor programs and student programs management
-app.use("/api", instructorProgramsRoutes);
-app.use("/api", studentProgramsRoutes);
-// Public website content management (courses/instructors/events/slides)
-// Public read endpoints are available under /api/content/*
-// Admin-only write endpoints are also under /api/content/*
-app.use("/api/content", contentRoutes);
-// Contact messages
-app.use("/api", contactRoutes);
+// Routes - Layered Architecture: Routes -> Controllers -> Services -> Repositories
+app.use("/api", apiRoutes);
 
 // Simple API health endpoint
 app.get("/api/health", (req, res) => res.json({ ok: true }));
