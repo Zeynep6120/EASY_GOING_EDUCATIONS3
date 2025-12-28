@@ -1,8 +1,0 @@
-[
-  { "id": 1, "label": "Home", "url": "/home.html" },
-  { "id": 2, "label": "About", "url": "/about.html" },
-  { "id": 3, "label": "Courses", "url": "/courses.html" },
-  { "id": 4, "label": "Events", "url": "/events.html" },
-  { "id": 5, "label": "Contact", "url": "/contact.html" }
-]
-

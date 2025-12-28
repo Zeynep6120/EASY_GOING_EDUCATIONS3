@@ -4,24 +4,24 @@ require("dotenv").config();
 
 const initializeDatabase = require("./db/init");
 
-// Routes
-const authRoutes = require("./routes/auth");
-const adminRoutes = require("./routes/admin");
-const managerRoutes = require("./routes/manager");
-const assistantManagerRoutes = require("./routes/assistant-manager");
-const instructorRoutes = require("./routes/instructor");
-const studentRoutes = require("./routes/student");
-const advisorInstructorRoutes = require("./routes/advisor-instructor");
-const usersRoutes = require("./routes/users");
-const termsRoutes = require("./routes/terms");
-const lessonsRoutes = require("./routes/lessons");
-const lessonProgramsRoutes = require("./routes/lesson-programs");
-// const studentInfoRoutes = require("./routes/student-info"); // Removed: student_info table merged into students
-const meetsRoutes = require("./routes/meets");
-const instructorProgramsRoutes = require("./routes/instructor-programs");
-const studentProgramsRoutes = require("./routes/student-programs");
-const contentRoutes = require("./routes/content");
-const contactRoutes = require("./routes/contact");
+// Controllers
+const authRoutes = require("./src/controllers/auth");
+const adminRoutes = require("./src/controllers/admin");
+const managerRoutes = require("./src/controllers/manager");
+const assistantManagerRoutes = require("./src/controllers/assistant-manager");
+const instructorRoutes = require("./src/controllers/instructor");
+const studentRoutes = require("./src/controllers/student");
+const advisorInstructorRoutes = require("./src/controllers/advisor-instructor");
+const usersRoutes = require("./src/controllers/users");
+const termsRoutes = require("./src/controllers/terms");
+const lessonsRoutes = require("./src/controllers/lessons");
+const lessonProgramsRoutes = require("./src/controllers/lesson-programs");
+// const studentInfoRoutes = require("./src/controllers/student-info"); // Removed: student_info table merged into students
+const meetsRoutes = require("./src/controllers/meets");
+const instructorProgramsRoutes = require("./src/controllers/instructor-programs");
+const studentProgramsRoutes = require("./src/controllers/student-programs");
+const contentRoutes = require("./src/controllers/content");
+const contactRoutes = require("./src/controllers/contact");
 
 const app = express();
 const net = require("net");

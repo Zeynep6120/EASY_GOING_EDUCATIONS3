@@ -2,24 +2,46 @@
 
 Bu proje, Next.js projesindeki yapıya benzer bir mimari kullanarak vanilla JavaScript, HTML ve SCSS ile geliştirilmiştir.
 
-## 📁 Proje Yapısı
+## 📁 Proje Yapısı (Çok Katmanlı Mimari)
 
 ```
 project-root/
-├── src/                    # Kaynak dosyalar
-│   ├── actions/           # İş mantığı
-│   ├── components/        # UI Bileşenleri
-│   ├── helpers/          # Yardımcı fonksiyonlar
-│   ├── services/         # API servisleri
-│   ├── styles/           # SCSS dosyaları
-│   └── middleware/       # Client-side middleware
-├── public/                # Public dosyalar
+├── src/                  # Tüm kaynak kodlar
+│   ├── controllers/      # Presentation Layer - HTTP isteklerini işler
+│   │   ├── auth.js
+│   │   ├── admin.js
+│   │   ├── student.js
+│   │   └── ...
+│   ├── services/         # Business Logic Layer - İş mantığı
+│   │   └── authService.js
+│   ├── repositories/     # Data Access Layer - Veritabanı işlemleri
+│   │   ├── User.js
+│   │   ├── Student.js
+│   │   ├── Course.js
+│   │   └── ...
+│   ├── middleware/       # Middleware katmanı
+│   │   ├── auth.js
+│   │   └── rbac.js
+│   ├── config/           # Konfigürasyon dosyaları
+│   │   └── database.js
+│   ├── utils/            # Yardımcı fonksiyonlar
+│   │   ├── validation.js
+│   │   ├── password.js
+│   │   ├── jwt.js
+│   │   └── response.js
+│   └── styles/           # SCSS dosyaları
+│       ├── index.scss
+│       └── ...
+├── db/                   # Veritabanı setup ve migration dosyaları
+│   ├── connection.js     # (src/config/database.js'e yönlendirir)
+│   ├── init.js
+│   └── ...
+├── scripts/              # Utility scriptler
+├── public/               # Frontend dosyalar
 │   ├── *.html           # HTML sayfaları
 │   ├── css/             # Derlenmiş CSS
+│   ├── js/              # Client-side JavaScript
 │   └── img/             # Görseller
-├── db/                   # Veritabanı dosyaları
-├── models/               # Veritabanı modelleri
-├── routes/               # API route'ları
 └── server.js             # Express server
 ```
 
