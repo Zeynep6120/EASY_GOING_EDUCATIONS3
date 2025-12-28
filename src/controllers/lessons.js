@@ -5,32 +5,17 @@ const authenticateToken = require("../middleware/auth");
 const { requireMinRole } = require("../middleware/rbac");
 const Course = require("../repositories/Course");
 
-function parseBool(value) {
-  if (value === undefined || value === null) return undefined;
-  const v = String(value).toLowerCase().trim();
-  if (["true", "1", "yes", "y"].includes(v)) return true;
-  if (["false", "0", "no", "n"].includes(v)) return false;
-  return undefined;
-}
-
 // GET /api/lessons (all authenticated users can view) - Now uses courses
 router.get("/lessons", authenticateToken, async (req, res) => {
   try {
-    // Optional filter: /api/lessons?compulsory=true|false
-    const compulsoryFilter = parseBool(req.query?.compulsory);
     const courses = await Course.getAll();
     
-    // Filter by compulsory if specified
-    const filteredCourses = compulsoryFilter === undefined
-      ? courses
-      : courses.filter(c => (c.compulsory || false) === compulsoryFilter);
-    
     // Map courses to lesson-like format for backward compatibility
-    const lessons = filteredCourses.map(c => ({
+    const lessons = courses.map(c => ({
       lesson_id: c.course_id,
       lesson_name: c.title,
       credit_score: c.credit_score || 0,
-      compulsory: c.compulsory || false,
+      compulsory: false, // compulsory column removed from courses table
     }));
     
     res.json(lessons);
@@ -53,7 +38,7 @@ router.get("/lessons/:id", authenticateToken, async (req, res) => {
       lesson_id: course.course_id,
       lesson_name: course.title,
       credit_score: course.credit_score || 0,
-      compulsory: course.compulsory || false,
+      compulsory: false, // compulsory column removed from courses table
     });
   } catch (e) {
     console.error("GET /lessons/:id error:", e);
@@ -77,7 +62,6 @@ router.post("/lessons", authenticateToken, requireMinRole("MANAGER"), async (req
       image: null,
       is_featured: false,
       credit_score: credit_score,
-      compulsory: Boolean(compulsory),
     });
     
     // Map course to lesson-like format for backward compatibility
@@ -85,7 +69,7 @@ router.post("/lessons", authenticateToken, requireMinRole("MANAGER"), async (req
       lesson_id: created.course_id,
       lesson_name: created.title,
       credit_score: created.credit_score || 0,
-      compulsory: created.compulsory || false,
+      compulsory: false, // compulsory column removed from courses table
     });
   } catch (e) {
     console.error("POST /lessons error:", e);
@@ -118,7 +102,6 @@ router.put("/lessons/:id", authenticateToken, requireMinRole("MANAGER"), async (
       image: existingCourse.image, // Keep existing image
       is_featured: existingCourse.is_featured, // Keep existing featured status
       credit_score: credit_score,
-      compulsory: Boolean(compulsory),
     });
     if (!updated) return res.status(404).json({ message: "Not found" });
     
@@ -127,7 +110,7 @@ router.put("/lessons/:id", authenticateToken, requireMinRole("MANAGER"), async (
       lesson_id: updated.course_id,
       lesson_name: updated.title,
       credit_score: updated.credit_score || 0,
-      compulsory: updated.compulsory || false,
+      compulsory: false, // compulsory column removed from courses table
     });
   } catch (e) {
     console.error("PUT /lessons/:id error:", e);

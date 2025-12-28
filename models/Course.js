@@ -2,11 +2,11 @@ const pool = require("../db/connection");
 
 class Course {
   static async create(courseData) {
-    const { title, description, duration, price, level, image, is_featured, credit_score, compulsory } =
+    const { title, description, duration, price, level, image, is_featured, credit_score } =
       courseData;
     const query = `
-      INSERT INTO courses (title, description, duration, price, level, image, is_featured, credit_score, compulsory)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO courses (title, description, duration, price, level, image, is_featured, credit_score)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `;
     const result = await pool.query(query, [
@@ -18,7 +18,6 @@ class Course {
       image,
       is_featured || false,
       credit_score || 0,
-      compulsory || false,
     ]);
     return result.rows[0];
   }
@@ -43,7 +42,7 @@ class Course {
   }
 
   static async update(courseId, courseData) {
-    const { title, description, duration, price, level, image, is_featured, credit_score, compulsory } =
+    const { title, description, duration, price, level, image, is_featured, credit_score } =
       courseData;
     
     // Build dynamic update query based on provided fields
@@ -82,10 +81,6 @@ class Course {
     if (credit_score !== undefined) {
       updates.push(`credit_score = $${paramIndex++}`);
       values.push(credit_score);
-    }
-    if (compulsory !== undefined) {
-      updates.push(`compulsory = $${paramIndex++}`);
-      values.push(compulsory);
     }
     
     if (updates.length === 0) {

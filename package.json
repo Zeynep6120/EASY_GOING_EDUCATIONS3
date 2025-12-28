@@ -9,6 +9,8 @@
     "db:create": "node db/createDatabase.js",
     "db:init": "node db/createTables.js",
     "db:admin": "node db/createAdmin.js",
+    "db:update:admin": "node db/updateAdminInfo.js",
+    "db:remove:compulsory": "node db/removeCompulsoryFromCourses.js",
     "db:students": "node db/createStudents.js",
     "db:lessons": "node db/createLessons.js",
     "db:teachers": "node db/createTeachers.js",

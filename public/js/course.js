@@ -77,7 +77,7 @@ function displayCourses(courses) {
   if (!tbody) return;
 
   if (courses.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='6'>No courses found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='5'>No courses found</td></tr>";
     return;
   }
 
@@ -88,7 +88,6 @@ function displayCourses(courses) {
         const courseId = course.lesson_id || course.course_id || course.id;
         const courseName = course.lesson_name || course.title || course.course_name || "";
         const creditScore = course.credit_score || course.creditScore || 0;
-        const compulsory = course.compulsory || false;
         
         return `
     <tr>
@@ -96,7 +95,6 @@ function displayCourses(courses) {
       <td>${courseId}</td>
       <td>${courseName}</td>
       <td>${creditScore}</td>
-      <td>${compulsory ? "Yes" : "No"}</td>
       <td>
         <button class="btn-small btn-edit" onclick="editCourse(${courseId})">Edit</button>
         <button class="btn-small btn-delete" onclick="deleteCourse(${courseId})">Delete</button>
@@ -163,7 +161,6 @@ async function handleSubmit(e) {
   const formData = {
     lesson_name: document.getElementById("courseName").value.trim(),
     credit_score: parseFloat(document.getElementById("courseCreditScore").value),
-    compulsory: document.getElementById("courseCompulsory").checked,
   };
 
   // Validation
@@ -242,7 +239,6 @@ window.editCourse = async function editCourse(id) {
     document.getElementById("courseId").value = course.lesson_id || course.course_id || course.id;
     document.getElementById("courseName").value = course.lesson_name || course.title || course.course_name || "";
     document.getElementById("courseCreditScore").value = course.credit_score || course.creditScore || 0;
-    document.getElementById("courseCompulsory").checked = course.compulsory || false;
 
     document.getElementById("courseModal").style.display = "block";
   } catch (error) {
