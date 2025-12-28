@@ -51,6 +51,57 @@ class AuthService {
         throw new Error("Invalid role");
       }
 
+      // Validate birth date based on role
+      if (userData.birth_date) {
+        const birthDate = new Date(userData.birth_date);
+        const today = new Date();
+        const normalizedRole = userData.role.toUpperCase();
+        
+        let minAge, maxAge, roleName;
+        
+        switch (normalizedRole) {
+          case "STUDENT":
+            minAge = 16;
+            maxAge = 65;
+            roleName = "Students";
+            break;
+          case "INSTRUCTOR":
+            minAge = 25;
+            maxAge = 65;
+            roleName = "Instructors";
+            break;
+          case "MANAGER":
+          case "ASSISTANT_MANAGER":
+            minAge = 30;
+            maxAge = 70;
+            roleName = "Managers";
+            break;
+          case "ADMIN":
+            minAge = 25;
+            maxAge = 70;
+            roleName = "Admins";
+            break;
+          default:
+            minAge = 18;
+            maxAge = 100;
+            roleName = "Users";
+        }
+        
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        const dayDiff = today.getDate() - birthDate.getDate();
+        
+        // Calculate exact age
+        let exactAge = age;
+        if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+          exactAge--;
+        }
+        
+        if (exactAge < minAge || exactAge > maxAge) {
+          throw new Error(`${roleName} must be between ${minAge}-${maxAge} years old`);
+        }
+      }
+
       // Check if username already exists
       const existingUser = await User.findByUsername(userData.username, db);
       if (existingUser) {

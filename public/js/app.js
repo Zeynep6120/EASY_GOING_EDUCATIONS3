@@ -25,6 +25,78 @@ if (window.location.hash === "#register") {
   switchToRegister();
 }
 
+// Birth date constraints based on role
+function setBirthDateConstraints(role) {
+  const birthDateInput = document.getElementById("regBirthDate");
+  const birthDateHint = document.getElementById("birthDateHint");
+  
+  if (!birthDateInput) return;
+  
+  const today = new Date();
+  let minDate, maxDate, hintText;
+  
+  // Calculate date constraints based on role
+  switch (role) {
+    case "STUDENT":
+      // Students: 16-65 years old
+      maxDate = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
+      minDate = new Date(today.getFullYear() - 65, today.getMonth(), today.getDate());
+      hintText = "Students must be between 16-65 years old";
+      break;
+      
+    case "INSTRUCTOR":
+      // Instructors: 25-65 years old
+      maxDate = new Date(today.getFullYear() - 25, today.getMonth(), today.getDate());
+      minDate = new Date(today.getFullYear() - 65, today.getMonth(), today.getDate());
+      hintText = "Instructors must be between 25-65 years old";
+      break;
+      
+    case "MANAGER":
+    case "ASSISTANT_MANAGER":
+      // Managers and Assistant Managers: 30-70 years old
+      maxDate = new Date(today.getFullYear() - 30, today.getMonth(), today.getDate());
+      minDate = new Date(today.getFullYear() - 70, today.getMonth(), today.getDate());
+      hintText = "Managers must be between 30-70 years old";
+      break;
+      
+    case "ADMIN":
+      // Admins: 25-70 years old (though usually created manually)
+      maxDate = new Date(today.getFullYear() - 25, today.getMonth(), today.getDate());
+      minDate = new Date(today.getFullYear() - 70, today.getMonth(), today.getDate());
+      hintText = "Admins must be between 25-70 years old";
+      break;
+      
+    default:
+      // General constraint: minimum 18 years old, maximum 100 years old
+      maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+      minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+      hintText = "Must be at least 18 years old";
+  }
+  
+  // Format dates as YYYY-MM-DD for input[type="date"]
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  birthDateInput.min = formatDate(minDate);
+  birthDateInput.max = formatDate(maxDate);
+  
+  if (birthDateHint) {
+    birthDateHint.textContent = hintText;
+  }
+  
+  // Clear the input if current value is outside constraints
+  if (birthDateInput.value) {
+    const selectedDate = new Date(birthDateInput.value);
+    if (selectedDate > maxDate || selectedDate < minDate) {
+      birthDateInput.value = "";
+    }
+  }
+}
+
 // Role selection handler for register form
 document.getElementById("regRole").addEventListener("change", (e) => {
   const role = e.target.value;
@@ -34,12 +106,20 @@ document.getElementById("regRole").addEventListener("change", (e) => {
   if (studentFields) studentFields.classList.add("hidden");
   if (instructorFields) instructorFields.classList.add("hidden");
 
+  // Set birth date constraints based on role
+  setBirthDateConstraints(role);
+
   if (role === "STUDENT") {
     if (studentFields) studentFields.classList.remove("hidden");
     loadAdvisorInstructors();
   } else if (role === "INSTRUCTOR") {
     if (instructorFields) instructorFields.classList.remove("hidden");
   }
+});
+
+// Initialize birth date constraints on page load (general constraint)
+document.addEventListener("DOMContentLoaded", () => {
+  setBirthDateConstraints("");
 });
 
 // Load advisor instructors for student registration
@@ -167,6 +247,40 @@ document.getElementById("registerBtn").addEventListener("click", async () => {
   ) {
     showMessage(messageEl, "Please fill all required fields (*)", "error");
     return;
+  }
+
+  // Validate birth date if provided
+  if (registerData.birth_date) {
+    const birthDateInput = document.getElementById("regBirthDate");
+    if (birthDateInput) {
+      const selectedDate = new Date(registerData.birth_date);
+      const minDate = new Date(birthDateInput.min);
+      const maxDate = new Date(birthDateInput.max);
+      
+      if (selectedDate < minDate || selectedDate > maxDate) {
+        const role = registerData.role;
+        let errorMsg = "";
+        switch (role) {
+          case "STUDENT":
+            errorMsg = "Students must be between 16-65 years old";
+            break;
+          case "INSTRUCTOR":
+            errorMsg = "Instructors must be between 25-65 years old";
+            break;
+          case "MANAGER":
+          case "ASSISTANT_MANAGER":
+            errorMsg = "Managers must be between 30-70 years old";
+            break;
+          case "ADMIN":
+            errorMsg = "Admins must be between 25-70 years old";
+            break;
+          default:
+            errorMsg = "Must be at least 18 years old";
+        }
+        showMessage(messageEl, errorMsg, "error");
+        return;
+      }
+    }
   }
 
   // Show loading message
