@@ -9,8 +9,17 @@ const bcrypt = require("bcryptjs");
 const router = express.Router();
 
 // Get all instructors with pagination
-router.get("/search", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), async (req, res) => {
+router.get("/search", authenticateToken, async (req, res) => {
   try {
+    const userRole = (req.user?.role || '').toUpperCase();
+    const userId = req.user?.id;
+    
+    // Check if user has permission
+    const allowedRoles = ['ADMIN', 'MANAGER', 'ASSISTANT_MANAGER', 'INSTRUCTOR'];
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
+    }
+
     const page = parseInt(req.query.page) || 0;
     const size = parseInt(req.query.size) || 10;
     const sort = req.query.sort || "name";
@@ -25,10 +34,29 @@ router.get("/search", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
 
     const offset = page * size;
 
-    // Get instructors with instructors table data - only from instructors table
-    // Check if user is advisor by checking students.advisor_instructor_id
-    const result = await pool.query(
-      `SELECT 
+    // If user is INSTRUCTOR (not ADMIN/MANAGER/ASSISTANT_MANAGER), only show their own data
+    let query, countQuery, queryParams;
+    if (userRole === "INSTRUCTOR") {
+      // Instructor can only see their own data
+      query = `SELECT 
+        u.user_id, u.username, u.name, u.surname, u.email, u.gender, u.birth_date, u.birth_place, u.phone_number, u.ssn,
+        i.title,
+        i.bio,
+        i.image,
+        i.social_links,
+        CASE WHEN EXISTS (SELECT 1 FROM students WHERE advisor_instructor_id = u.user_id) THEN true ELSE false END as is_advisor_instructor
+       FROM instructors i
+       INNER JOIN users u ON u.user_id = i.instructor_id
+       WHERE u.role = 'INSTRUCTOR' AND u.user_id = $1
+       ORDER BY u.${sortColumn} ${sortType}
+       LIMIT $2 OFFSET $3`;
+      countQuery = `SELECT COUNT(*) FROM instructors i
+       INNER JOIN users u ON u.user_id = i.instructor_id
+       WHERE u.role = 'INSTRUCTOR' AND u.user_id = $1`;
+      queryParams = [userId, size, offset];
+    } else {
+      // ADMIN, MANAGER, ASSISTANT_MANAGER can see all instructors
+      query = `SELECT 
         u.user_id, u.username, u.name, u.surname, u.email, u.gender, u.birth_date, u.birth_place, u.phone_number, u.ssn,
         i.title,
         i.bio,
@@ -39,16 +67,19 @@ router.get("/search", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
        INNER JOIN users u ON u.user_id = i.instructor_id
        WHERE u.role = 'INSTRUCTOR'
        ORDER BY u.${sortColumn} ${sortType}
-       LIMIT $1 OFFSET $2`,
-      [size, offset]
-    );
-
-    // Get total count from instructors table
-    const countResult = await pool.query(
-      `SELECT COUNT(*) FROM instructors i
+       LIMIT $1 OFFSET $2`;
+      countQuery = `SELECT COUNT(*) FROM instructors i
        INNER JOIN users u ON u.user_id = i.instructor_id
-       WHERE u.role = 'INSTRUCTOR'`
-    );
+       WHERE u.role = 'INSTRUCTOR'`;
+      queryParams = [size, offset];
+    }
+
+    // Get instructors
+    const result = await pool.query(query, queryParams);
+
+    // Get total count
+    const countParams = userRole === "INSTRUCTOR" ? [userId] : [];
+    const countResult = await pool.query(countQuery, countParams);
     const totalElements = parseInt(countResult.rows[0].count);
 
     res.json({
@@ -67,8 +98,41 @@ router.get("/search", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
 // Get all instructors (no pagination) - only from instructors table
 router.get("/getAll", authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT 
+    const userRole = (req.user?.role || '').toUpperCase();
+    const userId = req.user?.id;
+    
+    // Check if user has permission
+    const allowedRoles = ['ADMIN', 'MANAGER', 'ASSISTANT_MANAGER', 'INSTRUCTOR'];
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
+    }
+
+    let query, queryParams;
+    if (userRole === "INSTRUCTOR") {
+      // Instructor can only see their own data
+      const instructorUserId = parseInt(userId);
+      if (!instructorUserId || isNaN(instructorUserId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      query = `SELECT 
+        u.user_id, 
+        u.username, 
+        u.name, 
+        u.surname, 
+        u.email,
+        i.title,
+        i.bio,
+        i.image,
+        i.social_links,
+        CASE WHEN EXISTS (SELECT 1 FROM students WHERE advisor_instructor_id = u.user_id) THEN true ELSE false END as is_advisor_instructor
+       FROM instructors i
+       INNER JOIN users u ON u.user_id = i.instructor_id
+       WHERE u.role = 'INSTRUCTOR' AND u.user_id = $1
+       ORDER BY u.name`;
+      queryParams = [instructorUserId];
+    } else {
+      // ADMIN, MANAGER, ASSISTANT_MANAGER can see all instructors
+      query = `SELECT 
         u.user_id, 
         u.username, 
         u.name, 
@@ -82,9 +146,11 @@ router.get("/getAll", authenticateToken, async (req, res) => {
        FROM instructors i
        INNER JOIN users u ON u.user_id = i.instructor_id
        WHERE u.role = 'INSTRUCTOR'
-       ORDER BY u.name`
-    );
+       ORDER BY u.name`;
+      queryParams = [];
+    }
 
+    const result = await pool.query(query, queryParams);
     res.json(result.rows);
   } catch (error) {
     console.error("Error fetching instructors:", error);
@@ -93,9 +159,22 @@ router.get("/getAll", authenticateToken, async (req, res) => {
 });
 
 // Get instructor by ID
-router.get("/getSavedInstructorById/:id", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), async (req, res) => {
+router.get("/getSavedInstructorById/:id", authenticateToken, async (req, res) => {
   try {
+    const userRole = (req.user?.role || '').toUpperCase();
+    const userId = req.user?.id;
     const { id } = req.params;
+    
+    // Check if user has permission
+    const allowedRoles = ['ADMIN', 'MANAGER', 'ASSISTANT_MANAGER', 'INSTRUCTOR'];
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
+    }
+
+    // If user is INSTRUCTOR (not ADMIN/MANAGER/ASSISTANT_MANAGER), they can only access their own data
+    if (userRole === "INSTRUCTOR" && parseInt(id) !== userId) {
+      return res.status(403).json({ message: "Forbidden: You can only access your own data" });
+    }
     
     const result = await pool.query(
       `SELECT 
@@ -404,10 +483,19 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
 
     // Always update instructors table - use INSERT ... ON CONFLICT for upsert
     // Get the final values to use - prioritize request params, then updated user data, then current instructor data
-    const finalName = name !== undefined ? name : (updatedUser.name || currentInstructor?.name || '');
-    const finalSurname = surname !== undefined ? surname : (updatedUser.surname || currentInstructor?.surname || '');
-    const finalUsername = username !== undefined ? username : (updatedUser.username || currentInstructor?.username || '');
-    const finalEmail = email !== undefined ? email : (updatedUser.email || currentInstructor?.email || '');
+    // Note: name is NOT NULL in instructors table, so we must have a value
+    const finalName = name !== undefined && name !== null && name !== '' 
+      ? name 
+      : (updatedUser.name || currentInstructor?.name || 'Unknown');
+    const finalSurname = surname !== undefined && surname !== null && surname !== ''
+      ? surname 
+      : (updatedUser.surname || currentInstructor?.surname || '');
+    const finalUsername = username !== undefined && username !== null && username !== ''
+      ? username 
+      : (updatedUser.username || currentInstructor?.username || '');
+    const finalEmail = email !== undefined && email !== null && email !== ''
+      ? email 
+      : (updatedUser.email || currentInstructor?.email || '');
     const finalTitle = title !== undefined ? (title || null) : (currentInstructor?.title || null);
     const finalBio = bio !== undefined ? (bio || null) : (currentInstructor?.bio || null);
     const finalPassword = hashedPassword || currentInstructor?.password || null;
@@ -425,7 +513,25 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
       currentInstructorExists: !!currentInstructor
     });
     
+    // Validate that we have required fields
+    if (!finalName || finalName.trim() === '') {
+      console.error("ERROR: finalName is empty or invalid:", finalName);
+      await client.query("ROLLBACK");
+      return res.status(400).json({ message: "Name is required and cannot be empty" });
+    }
+
     try {
+      console.log("Executing INSERT ... ON CONFLICT query with params:", {
+        id,
+        finalName,
+        finalSurname,
+        finalUsername,
+        finalEmail,
+        finalTitle,
+        finalBio,
+        hasPassword: !!finalPassword
+      });
+
       const result = await client.query(
         `INSERT INTO instructors (instructor_id, name, surname, username, email, title, bio, password)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -440,19 +546,50 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
          RETURNING *`,
         [id, finalName, finalSurname, finalUsername, finalEmail, finalTitle, finalBio, finalPassword]
       );
-      console.log("Instructor record updated in instructors table:", result.rows[0]);
+      
+      if (result.rows && result.rows.length > 0) {
+        console.log("SUCCESS: Instructor record updated in instructors table:", result.rows[0]);
+      } else {
+        console.warn("WARNING: Instructor update query returned no rows");
+      }
     } catch (instructorError) {
-      console.error("Error updating instructors table:", instructorError);
+      console.error("ERROR: Failed to update instructors table:", instructorError);
       console.error("Error details:", {
         message: instructorError.message,
         code: instructorError.code,
         detail: instructorError.detail,
+        constraint: instructorError.constraint,
         stack: instructorError.stack
       });
-      throw instructorError; // Re-throw to trigger rollback
+      // Rollback transaction on error
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Error during rollback:", rollbackError);
+      }
+      return res.status(500).json({ 
+        message: "Error updating instructor record", 
+        error: instructorError.message 
+      });
     }
 
-    await client.query("COMMIT");
+    // Commit transaction only if all operations succeeded
+    try {
+      await client.query("COMMIT");
+      console.log("Transaction committed successfully");
+    } catch (commitError) {
+      console.error("Error committing transaction:", commitError);
+      // Try to rollback if commit fails
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Error during rollback after commit failure:", rollbackError);
+      }
+      return res.status(500).json({ 
+        message: "Error committing transaction", 
+        error: commitError.message 
+      });
+    }
 
     const updatedInstructor = await User.findById(id, client);
     

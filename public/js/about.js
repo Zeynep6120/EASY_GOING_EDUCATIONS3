@@ -55,7 +55,7 @@ async function loadInstructors() {
                onerror="this.src='/img/instructors/instructor-01.jpg';" />
         </div>
         <div class="instructor-content">
-          <h3>${instructor.name || "Instructor"}</h3>
+          <h3>${(instructor.name || "").trim()} ${(instructor.surname || "").trim()}</h3>
           <p class="instructor-title">${instructor.title || "Instructor"}</p>
           <p class="instructor-bio">${instructor.bio || ""}</p>
         </div>

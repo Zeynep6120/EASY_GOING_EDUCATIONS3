@@ -8,13 +8,15 @@ const pool = require("../db/connection");
 const router = express.Router();
 
 // Get all students with pagination
-// TEACHER, ASSISTANT_MANAGER, MANAGER, ADMIN can access
+// INSTRUCTOR, ASSISTANT_MANAGER, MANAGER, ADMIN, STUDENT can access
 router.get("/search", authenticateToken, async (req, res) => {
   try {
-    // Check role - INSTRUCTOR, ASSISTANT_MANAGER, MANAGER, ADMIN can access
-    const role = (req.user?.role || '').toUpperCase();
-    const allowedRoles = ['INSTRUCTOR', 'ASSISTANT_MANAGER', 'MANAGER', 'ADMIN'];
-    if (!allowedRoles.includes(role)) {
+    const userRole = (req.user?.role || '').toUpperCase();
+    const userId = req.user?.id;
+    
+    // Check role - INSTRUCTOR, ASSISTANT_MANAGER, MANAGER, ADMIN, STUDENT can access
+    const allowedRoles = ['INSTRUCTOR', 'ASSISTANT_MANAGER', 'MANAGER', 'ADMIN', 'STUDENT'];
+    if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
     }
 
@@ -32,9 +34,24 @@ router.get("/search", authenticateToken, async (req, res) => {
 
     const offset = page * size;
 
-    // Get students with advisor instructor info
-    const result = await pool.query(
-      `SELECT u.user_id, u.username, u.name, u.surname, u.email, u.gender, u.birth_date, u.birth_place, u.phone_number, u.ssn,
+    // If user is STUDENT (not ADMIN/MANAGER/ASSISTANT_MANAGER/INSTRUCTOR), only show their own data
+    let query, countQuery, queryParams;
+    if (userRole === "STUDENT") {
+      // Student can only see their own data
+      query = `SELECT u.user_id, u.username, u.name, u.surname, u.email, u.gender, u.birth_date, u.birth_place, u.phone_number, u.ssn,
+              s.student_id, s.father_name, s.mother_name, s.advisor_instructor_id,
+              adv.name AS advisor_name, adv.surname AS advisor_surname
+       FROM users u
+       LEFT JOIN students s ON s.student_id = u.user_id
+       LEFT JOIN users adv ON adv.user_id = s.advisor_instructor_id
+       WHERE u.role = 'STUDENT' AND u.user_id = $1
+       ORDER BY u.${sortColumn} ${sortType}
+       LIMIT $2 OFFSET $3`;
+      countQuery = "SELECT COUNT(*) FROM users WHERE role = 'STUDENT' AND user_id = $1";
+      queryParams = [userId, size, offset];
+    } else {
+      // ADMIN, MANAGER, ASSISTANT_MANAGER, INSTRUCTOR can see all students
+      query = `SELECT u.user_id, u.username, u.name, u.surname, u.email, u.gender, u.birth_date, u.birth_place, u.phone_number, u.ssn,
               s.student_id, s.father_name, s.mother_name, s.advisor_instructor_id,
               adv.name AS advisor_name, adv.surname AS advisor_surname
        FROM users u
@@ -42,14 +59,17 @@ router.get("/search", authenticateToken, async (req, res) => {
        LEFT JOIN users adv ON adv.user_id = s.advisor_instructor_id
        WHERE u.role = 'STUDENT'
        ORDER BY u.${sortColumn} ${sortType}
-       LIMIT $1 OFFSET $2`,
-      [size, offset]
-    );
+       LIMIT $1 OFFSET $2`;
+      countQuery = "SELECT COUNT(*) FROM users WHERE role = 'STUDENT'";
+      queryParams = [size, offset];
+    }
+
+    // Get students
+    const result = await pool.query(query, queryParams);
 
     // Get total count
-    const countResult = await pool.query(
-      "SELECT COUNT(*) FROM users WHERE role = 'STUDENT'"
-    );
+    const countParams = userRole === "STUDENT" ? [userId] : [];
+    const countResult = await pool.query(countQuery, countParams);
     const totalElements = parseInt(countResult.rows[0].count);
 
     res.json({
@@ -68,17 +88,41 @@ router.get("/search", authenticateToken, async (req, res) => {
 // Get all students (no pagination)
 router.get("/getAll", authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT u.user_id, u.username, u.name, u.surname, u.email,
+    const userRole = (req.user?.role || '').toUpperCase();
+    const userId = req.user?.id;
+    
+    // Check if user has permission
+    const allowedRoles = ['ADMIN', 'MANAGER', 'ASSISTANT_MANAGER', 'INSTRUCTOR', 'STUDENT'];
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
+    }
+
+    let query, queryParams;
+    if (userRole === "STUDENT") {
+      // Student can only see their own data
+      query = `SELECT u.user_id, u.username, u.name, u.surname, u.email,
+              s.student_id, s.father_name, s.mother_name, s.advisor_instructor_id,
+              adv.name AS advisor_name, adv.surname AS advisor_surname
+       FROM users u
+       LEFT JOIN students s ON s.student_id = u.user_id
+       LEFT JOIN users adv ON adv.user_id = s.advisor_instructor_id
+       WHERE u.role = 'STUDENT' AND u.user_id = $1
+       ORDER BY u.name`;
+      queryParams = [userId];
+    } else {
+      // ADMIN, MANAGER, ASSISTANT_MANAGER, INSTRUCTOR can see all students
+      query = `SELECT u.user_id, u.username, u.name, u.surname, u.email,
               s.student_id, s.father_name, s.mother_name, s.advisor_instructor_id,
               adv.name AS advisor_name, adv.surname AS advisor_surname
        FROM users u
        LEFT JOIN students s ON s.student_id = u.user_id
        LEFT JOIN users adv ON adv.user_id = s.advisor_instructor_id
        WHERE u.role = 'STUDENT'
-       ORDER BY u.name`
-    );
+       ORDER BY u.name`;
+      queryParams = [];
+    }
 
+    const result = await pool.query(query, queryParams);
     res.json(result.rows);
   } catch (error) {
     console.error("Error fetching students:", error);
@@ -109,9 +153,22 @@ router.get("/getAllByAdvisor", authenticateToken, async (req, res) => {
 });
 
 // Get student by ID
-router.get("/getStudentById", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), async (req, res) => {
+router.get("/getStudentById", authenticateToken, async (req, res) => {
   try {
+    const userRole = (req.user?.role || '').toUpperCase();
+    const userId = req.user?.id;
     const { id } = req.query;
+    
+    // Check if user has permission
+    const allowedRoles = ['ADMIN', 'MANAGER', 'ASSISTANT_MANAGER', 'INSTRUCTOR', 'STUDENT'];
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
+    }
+
+    // If user is STUDENT (not ADMIN/MANAGER/ASSISTANT_MANAGER/INSTRUCTOR), they can only access their own data
+    if (userRole === "STUDENT" && parseInt(id) !== userId) {
+      return res.status(403).json({ message: "Forbidden: You can only access your own data" });
+    }
     
     const result = await pool.query(
       `SELECT u.user_id, u.username, u.name, u.surname, u.email, u.gender, u.birth_date, u.birth_place, u.phone_number, u.ssn,
@@ -584,8 +641,10 @@ router.delete("/delete/:id", authenticateToken, requireMinRole("ASSISTANT_MANAGE
       await client.query("DELETE FROM student_programs WHERE student_id = $1", [studentId]);
       console.log(`Deleted student_programs for student ${studentId}`);
     } catch (err) {
-      console.warn(`Error deleting student_programs: ${err.message}`);
-      // Continue even if this fails
+      // Ignore if table doesn't exist or no records
+      if (err.code !== '42P01' && err.code !== '25P02') {
+        console.warn(`Error deleting student_programs: ${err.message}`);
+      }
     }
     
     // 2. Delete from meet_students (references students.student_id)
@@ -593,46 +652,59 @@ router.delete("/delete/:id", authenticateToken, requireMinRole("ASSISTANT_MANAGE
       await client.query("DELETE FROM meet_students WHERE student_id = $1", [studentId]);
       console.log(`Deleted meet_students for student ${studentId}`);
     } catch (err) {
-      console.warn(`Error deleting meet_students: ${err.message}`);
-      // Continue even if this fails
+      // Ignore if table doesn't exist or no records
+      if (err.code !== '42P01' && err.code !== '25P02') {
+        console.warn(`Error deleting meet_students: ${err.message}`);
+      }
     }
     
-    // 3. Delete from student_info (if exists, references students.student_id)
-    try {
-      await client.query("DELETE FROM student_info WHERE student_id = $1", [studentId]);
-      console.log(`Deleted student_info for student ${studentId}`);
-    } catch (err) {
-      // Table might not exist or no records, ignore error
-      console.log(`student_info deletion skipped: ${err.message}`);
-    }
+    // 3. Skip student_info - table doesn't exist in current schema
+    // (student_info table was removed from schema)
 
     // 4. Delete from students table (references users.user_id)
-    try {
-      const deleteStudentsResult = await client.query("DELETE FROM students WHERE student_id = $1 RETURNING *", [studentId]);
-      console.log(`Deleted from students table: ${deleteStudentsResult.rowCount} row(s)`);
-    } catch (err) {
-      console.error(`Error deleting from students table: ${err.message}`);
-      throw err; // This is critical, re-throw
+    const deleteStudentsResult = await client.query("DELETE FROM students WHERE student_id = $1 RETURNING *", [studentId]);
+    console.log(`Deleted from students table: ${deleteStudentsResult.rowCount} row(s)`);
+    
+    if (deleteStudentsResult.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "Student record not found in students table" });
     }
     
     // 5. Delete from users table (parent table)
-    try {
-      const deleteUsersResult = await client.query("DELETE FROM users WHERE user_id = $1 RETURNING *", [studentId]);
-      console.log(`Deleted from users table: ${deleteUsersResult.rowCount} row(s)`);
-      
-      if (deleteUsersResult.rowCount === 0) {
-        throw new Error("User was not deleted");
-      }
-    } catch (err) {
-      console.error(`Error deleting from users table: ${err.message}`);
-      throw err; // This is critical, re-throw
+    const deleteUsersResult = await client.query("DELETE FROM users WHERE user_id = $1 RETURNING *", [studentId]);
+    console.log(`Deleted from users table: ${deleteUsersResult.rowCount} row(s)`);
+    
+    if (deleteUsersResult.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "User record not found in users table" });
     }
 
-    await client.query("COMMIT");
-    console.log(`Student ${studentId} deleted successfully`);
-    res.json({ message: "Student deleted successfully" });
+    // Commit transaction only if all operations succeeded
+    try {
+      await client.query("COMMIT");
+      console.log(`Student ${studentId} deleted successfully`);
+      res.json({ message: "Student deleted successfully" });
+    } catch (commitError) {
+      console.error("Error committing transaction:", commitError);
+      // Try to rollback if commit fails
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Error during rollback after commit failure:", rollbackError);
+      }
+      return res.status(500).json({ 
+        message: "Error committing transaction", 
+        error: commitError.message 
+      });
+    }
   } catch (error) {
-    await client.query("ROLLBACK");
+    // Rollback transaction on any error
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("Error during rollback:", rollbackError);
+    }
+    
     console.error("Error deleting student:", error);
     console.error("Error details:", {
       message: error.message,

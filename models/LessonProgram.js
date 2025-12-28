@@ -189,28 +189,27 @@ class LessonProgram {
   }
 
   static async addCourse(programId, courseId) {
-    // Insert into program_lessons (current system)
-    const insertQuery =
-      "INSERT INTO program_lessons (course_program_id, lesson_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *";
-    const result = await pool.query(insertQuery, [programId, courseId]);
+    // Update course_programs with course information directly
+    // Note: program_lessons table doesn't exist in current schema
+    const updateQuery = `
+      UPDATE course_programs lp
+      SET 
+        course_id = c.course_id,
+        course_name = c.title,
+        program_id = lp.course_program_id,
+        day = lp.day_of_week,
+        time = CONCAT(lp.start_time::text, ' - ', lp.stop_time::text),
+        term = et.term_name
+      FROM courses c, education_terms et
+      WHERE lp.course_program_id = $1
+      AND c.course_id = $2
+      AND lp.education_term_id = et.term_id
+      RETURNING lp.*
+    `;
+    const result = await pool.query(updateQuery, [programId, courseId]);
     
-    // Update course_programs with course information and ensure day, time, term are up to date
-    if (result.rows.length > 0) {
-      const updateQuery = `
-        UPDATE course_programs lp
-        SET 
-          course_id = c.course_id,
-          course_name = c.title,
-          program_id = lp.course_program_id,
-          day = lp.day_of_week,
-          time = CONCAT(lp.start_time::text, ' - ', lp.stop_time::text),
-          term = et.term_name
-        FROM courses c, education_terms et
-        WHERE lp.course_program_id = $1
-        AND c.course_id = $2
-        AND lp.education_term_id = et.term_id
-      `;
-      await pool.query(updateQuery, [programId, courseId]);
+    if (result.rows.length === 0) {
+      throw new Error("Course program not found or course not found");
     }
     
     return result.rows[0];
@@ -222,34 +221,27 @@ class LessonProgram {
   }
 
   static async removeCourse(programId, courseId) {
-    // Delete from program_lessons (current system)
-    const deleteQuery =
-      "DELETE FROM program_lessons WHERE course_program_id = $1 AND lesson_id = $2 RETURNING *";
-    const result = await pool.query(deleteQuery, [programId, courseId]);
+    // Update course_programs to clear course info
+    // Note: program_lessons table doesn't exist in current schema
+    const updateQuery = `
+      UPDATE course_programs lp
+      SET 
+        course_id = NULL,
+        course_name = NULL,
+        program_id = lp.course_program_id,
+        day = lp.day_of_week,
+        time = CONCAT(lp.start_time::text, ' - ', lp.stop_time::text),
+        term = et.term_name
+      FROM education_terms et
+      WHERE lp.course_program_id = $1
+      AND lp.course_id = $2
+      AND lp.education_term_id = et.term_id
+      RETURNING lp.*
+    `;
+    const result = await pool.query(updateQuery, [programId, courseId]);
     
-    // Update course_programs - clear course info if no courses left, or update to first remaining course
-    // Also ensure day, time, term are up to date
-    if (result.rows.length > 0) {
-      const updateQuery = `
-        UPDATE course_programs lp
-        SET 
-          course_id = COALESCE(
-            (SELECT c.course_id FROM program_lessons pl JOIN courses c ON pl.lesson_id = c.course_id WHERE pl.course_program_id = lp.course_program_id LIMIT 1),
-            NULL
-          ),
-          course_name = COALESCE(
-            (SELECT c.title FROM program_lessons pl JOIN courses c ON pl.lesson_id = c.course_id WHERE pl.course_program_id = lp.course_program_id LIMIT 1),
-            NULL
-          ),
-          program_id = lp.course_program_id,
-          day = lp.day_of_week,
-          time = CONCAT(lp.start_time::text, ' - ', lp.stop_time::text),
-          term = et.term_name
-        FROM education_terms et
-        WHERE lp.course_program_id = $1
-        AND lp.education_term_id = et.term_id
-      `;
-      await pool.query(updateQuery, [programId]);
+    if (result.rows.length === 0) {
+      return null;
     }
     
     return result.rows[0];
@@ -291,49 +283,6 @@ class LessonProgram {
         WHERE cp.course_program_id = $1 AND cp.course_id IS NOT NULL
       `;
       result = await pool.query(query, [programId]);
-    }
-    
-    // If still no results, try program_lessons (if it exists)
-    if (result.rows.length === 0) {
-      // Check if program_lessons table exists
-      const tableCheck = await pool.query(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_name = 'program_lessons'
-        )
-      `);
-      
-      if (tableCheck.rows[0].exists) {
-        query = `
-          SELECT c.course_id, c.title as course_name, c.title, c.description, c.duration, c.level
-          FROM courses c
-          JOIN program_lessons pl ON c.course_id = pl.lesson_id
-          WHERE pl.course_program_id = $1
-        `;
-        result = await pool.query(query, [programId]);
-      }
-    }
-    
-    // If still no results, try program_courses (backward compatibility)
-    if (result.rows.length === 0) {
-      const tableCheck = await pool.query(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_name = 'program_courses'
-        )
-      `);
-      
-      if (tableCheck.rows[0].exists) {
-        query = `
-          SELECT c.course_id, c.title as course_name, c.title, c.description, c.duration, c.level
-          FROM courses c
-          JOIN program_courses pc ON c.course_id = pc.course_id
-          WHERE pc.course_program_id = $1
-        `;
-        result = await pool.query(query, [programId]);
-      }
     }
     
     return result.rows;

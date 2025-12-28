@@ -282,18 +282,27 @@ async function handleSubmit(e) {
         
         // Remove all current lessons
         for (const lesson of currentLessons) {
-          await fetch(`${API_BASE}/${programId}/lessons/${lesson.lesson_id || lesson.id}`, {
+          const removeRes = await fetch(`${API_BASE}/${programId}/lessons/${lesson.lesson_id || lesson.id || lesson.course_id}`, {
             method: "DELETE",
             headers: getAuthHeaders(),
           });
+          if (!removeRes.ok) {
+            console.warn("Error removing course:", await removeRes.json().catch(() => ({})));
+          }
         }
 
         // Add new lesson
-        await fetch(`${API_BASE}/${programId}/lessons`, {
+        const addLessonRes = await fetch(`${API_BASE}/${programId}/lessons`, {
           method: "POST",
           headers: getAuthHeaders(),
-          body: JSON.stringify({ lesson_id: lessonId }),
+          body: JSON.stringify({ lesson_id: lessonId, course_id: lessonId }),
         });
+        if (!addLessonRes.ok) {
+          const errorData = await addLessonRes.json().catch(() => ({ message: "Failed to add course" }));
+          console.error("Error adding course to program:", errorData);
+          showMessage(messageEl, errorData.message || "Failed to add course to program", "error");
+          return;
+        }
       }
     } else {
       // Create
@@ -314,11 +323,15 @@ async function handleSubmit(e) {
 
       // Add lesson to program
       if (lessonId && createdProgramId) {
-        await fetch(`${API_BASE}/${createdProgramId}/lessons`, {
+        const addLessonRes = await fetch(`${API_BASE}/${createdProgramId}/lessons`, {
           method: "POST",
           headers: getAuthHeaders(),
           body: JSON.stringify({ lesson_id: lessonId }),
         });
+        if (!addLessonRes.ok) {
+          const errorData = await addLessonRes.json().catch(() => ({ message: "Failed to add course" }));
+          console.error("Error adding course to program:", errorData);
+        }
       }
     }
 

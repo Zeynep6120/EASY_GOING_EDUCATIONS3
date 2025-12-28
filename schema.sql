@@ -1,6 +1,5 @@
 -- School Management System Database Schema
-
--- Users table (with roles)
+-- Total: 17 tables
 
 -- Roles lookup table (normalized)
 CREATE TABLE IF NOT EXISTS roles (
@@ -13,10 +12,11 @@ INSERT INTO roles (role_name) VALUES
 ('ADMIN'),
 ('MANAGER'),
 ('ASSISTANT_MANAGER'),
-('TEACHER'),
+('INSTRUCTOR'),
 ('STUDENT')
 ON CONFLICT (role_name) DO NOTHING;
 
+-- Users table (with roles)
 CREATE TABLE IF NOT EXISTS users (
   user_id SERIAL PRIMARY KEY,
   username VARCHAR(50) UNIQUE NOT NULL,
@@ -32,7 +32,6 @@ CREATE TABLE IF NOT EXISTS users (
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   role VARCHAR(30) NOT NULL REFERENCES roles(role_name)
 );
-
 
 -- Admins specialization
 CREATE TABLE IF NOT EXISTS admins (
@@ -94,27 +93,6 @@ CREATE INDEX IF NOT EXISTS idx_assistant_managers_username ON assistant_managers
 CREATE INDEX IF NOT EXISTS idx_assistant_managers_email ON assistant_managers(email);
 CREATE INDEX IF NOT EXISTS idx_assistant_managers_ssn ON assistant_managers(ssn);
 
--- Teachers specialization
-CREATE TABLE IF NOT EXISTS teachers (
-  teacher_id INTEGER PRIMARY KEY REFERENCES users(user_id),
-  username VARCHAR(50),
-  name VARCHAR(100),
-  surname VARCHAR(100),
-  email VARCHAR(100),
-  gender VARCHAR(10),
-  birth_date DATE,
-  birth_place VARCHAR(100),
-  phone_number VARCHAR(20),
-  ssn VARCHAR(20),
-  is_active BOOLEAN DEFAULT TRUE,
-  is_advisor_teacher BOOLEAN DEFAULT FALSE
-);
-
--- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_teachers_username ON teachers(username);
-CREATE INDEX IF NOT EXISTS idx_teachers_email ON teachers(email);
-CREATE INDEX IF NOT EXISTS idx_teachers_ssn ON teachers(ssn);
-
 -- Students specialization
 CREATE TABLE IF NOT EXISTS students (
   student_id INTEGER PRIMARY KEY REFERENCES users(user_id),
@@ -130,7 +108,7 @@ CREATE TABLE IF NOT EXISTS students (
   is_active BOOLEAN DEFAULT TRUE,
   father_name VARCHAR(100),
   mother_name VARCHAR(100),
-  advisor_teacher_id INTEGER REFERENCES teachers(teacher_id)
+  advisor_instructor_id INTEGER REFERENCES users(user_id)
 );
 
 -- Create indexes for better performance
@@ -146,63 +124,49 @@ CREATE TABLE IF NOT EXISTS education_terms (
   end_date DATE NOT NULL
 );
 
--- Lessons
-CREATE TABLE IF NOT EXISTS lessons (
-  lesson_id SERIAL PRIMARY KEY,
-  lesson_name VARCHAR(100) NOT NULL,
-  credit_score INTEGER NOT NULL,
-  compulsory BOOLEAN DEFAULT FALSE
-);
-
--- Lesson programs
-CREATE TABLE IF NOT EXISTS lesson_programs (
-  lesson_program_id SERIAL PRIMARY KEY,
+-- Course Programs
+CREATE TABLE IF NOT EXISTS course_programs (
+  course_program_id SERIAL PRIMARY KEY,
   day_of_week VARCHAR(10) NOT NULL,
   start_time TIME NOT NULL,
   stop_time TIME NOT NULL,
-  education_term_id INTEGER NOT NULL REFERENCES education_terms(term_id)
-);
-
--- Program-Lesson (M:N)
-CREATE TABLE IF NOT EXISTS program_lessons (
-  lesson_program_id INTEGER REFERENCES lesson_programs(lesson_program_id),
-  lesson_id INTEGER REFERENCES lessons(lesson_id),
-  PRIMARY KEY (lesson_program_id, lesson_id)
-);
-
--- Teacher-Program (M:N)
-CREATE TABLE IF NOT EXISTS teacher_programs (
-  teacher_id INTEGER REFERENCES teachers(teacher_id),
-  lesson_program_id INTEGER REFERENCES lesson_programs(lesson_program_id),
-  PRIMARY KEY (teacher_id, lesson_program_id)
+  education_term_id INTEGER NOT NULL REFERENCES education_terms(term_id),
+  course_id INTEGER,
+  course_name VARCHAR(255),
+  program_id INTEGER,
+  day VARCHAR(10),
+  time VARCHAR(50),
+  term VARCHAR(100)
 );
 
 -- Student-Program (M:N)
 CREATE TABLE IF NOT EXISTS student_programs (
   student_id INTEGER REFERENCES students(student_id),
-  lesson_program_id INTEGER REFERENCES lesson_programs(lesson_program_id),
-  PRIMARY KEY (student_id, lesson_program_id)
+  course_program_id INTEGER REFERENCES course_programs(course_program_id),
+  PRIMARY KEY (student_id, course_program_id)
 );
 
--- Student Info
-CREATE TABLE IF NOT EXISTS student_info (
-  student_info_id SERIAL PRIMARY KEY,
-  student_id INTEGER NOT NULL REFERENCES students(student_id),
-  lesson_id INTEGER NOT NULL REFERENCES lessons(lesson_id),
-  term_id INTEGER NOT NULL REFERENCES education_terms(term_id),
-  absentee INTEGER DEFAULT 0,
-  midterm_exam DECIMAL(5,2),
-  final_exam DECIMAL(5,2),
-  average DECIMAL(5,2),
-  note VARCHAR(10),
-  info_note TEXT,
-  UNIQUE (student_id, lesson_id, term_id)
+-- Instructor-Program (M:N)
+CREATE TABLE IF NOT EXISTS instructor_programs (
+  instructor_id INTEGER NOT NULL REFERENCES users(user_id),
+  course_program_id INTEGER NOT NULL REFERENCES course_programs(course_program_id),
+  instructor_name VARCHAR(100),
+  instructor_surname VARCHAR(100),
+  instructor_email VARCHAR(100),
+  instructor_username VARCHAR(50),
+  program_id INTEGER,
+  day VARCHAR(10),
+  time VARCHAR(50),
+  term VARCHAR(100),
+  course_id INTEGER,
+  course_name VARCHAR(255),
+  PRIMARY KEY (instructor_id, course_program_id)
 );
 
--- MEET (Teacher-Student Meetings)
+-- MEET (Instructor-Student Meetings)
 CREATE TABLE IF NOT EXISTS meets (
   meet_id SERIAL PRIMARY KEY,
-  teacher_id INTEGER NOT NULL REFERENCES teachers(teacher_id),
+  instructor_id INTEGER REFERENCES users(user_id),
   date DATE NOT NULL,
   start_time TIME NOT NULL,
   stop_time TIME NOT NULL,
@@ -240,12 +204,16 @@ CREATE TABLE IF NOT EXISTS courses (
 
 -- INSTRUCTOR (Public web content - Instructors)
 CREATE TABLE IF NOT EXISTS instructors (
-  instructor_id SERIAL PRIMARY KEY,
+  instructor_id INTEGER PRIMARY KEY REFERENCES users(user_id),
   name VARCHAR(100) NOT NULL,
+  surname VARCHAR(100),
+  username VARCHAR(50),
+  email VARCHAR(100),
   title VARCHAR(100),
   bio TEXT,
   image VARCHAR(255),
-  social_links JSONB
+  social_links JSONB,
+  password VARCHAR(255)
 );
 
 -- EVENT (Public web content - Events)

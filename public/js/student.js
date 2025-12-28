@@ -13,8 +13,8 @@ function checkAuth() {
     return false;
   }
   const user = getCurrentUser();
-  // ADMIN, MANAGER, ASSISTANT_MANAGER, INSTRUCTOR can access
-  if (!user || !["ADMIN", "MANAGER", "ASSISTANT_MANAGER", "INSTRUCTOR"].includes(user.role)) {
+  // ADMIN, MANAGER, ASSISTANT_MANAGER, INSTRUCTOR, STUDENT can access
+  if (!user || !["ADMIN", "MANAGER", "ASSISTANT_MANAGER", "INSTRUCTOR", "STUDENT"].includes(user.role)) {
     window.location.href = "/unauthorized.html";
     return false;
   }
@@ -51,6 +51,13 @@ document.addEventListener("DOMContentLoaded", function() {
   
   if (typeof initHeader === "function") {
     initHeader();
+  }
+
+  // Hide "Add New Student" button if user is not ADMIN/MANAGER/ASSISTANT_MANAGER/INSTRUCTOR
+  const currentUser = getCurrentUser();
+  const addStudentBtn = document.getElementById("addStudentBtn");
+  if (addStudentBtn && currentUser && !["ADMIN", "MANAGER", "ASSISTANT_MANAGER", "INSTRUCTOR"].includes(currentUser.role)) {
+    addStudentBtn.style.display = "none";
   }
 
   loadAdvisorInstructors();
@@ -177,14 +184,38 @@ function displayStudents(students) {
   const tbody = document.getElementById("studentTableBody");
   if (!tbody) return;
 
-  if (students.length === 0) {
+  const currentUser = getCurrentUser();
+  const isAdmin = currentUser && currentUser.role === "ADMIN";
+  const isManager = currentUser && (currentUser.role === "MANAGER" || currentUser.role === "ASSISTANT_MANAGER");
+  const isInstructor = currentUser && currentUser.role === "INSTRUCTOR";
+  const isStudent = currentUser && currentUser.role === "STUDENT";
+
+  // If user is STUDENT, filter to show only their own data
+  let filteredStudents = students;
+  if (isStudent) {
+    filteredStudents = students.filter(
+      (student) => 
+        currentUser.id === student.user_id || 
+        currentUser.user_id === student.user_id ||
+        currentUser.id === student.student_id ||
+        currentUser.user_id === student.student_id
+    );
+  }
+
+  if (filteredStudents.length === 0) {
     tbody.innerHTML = "<tr><td colspan='10'>No students found</td></tr>";
     return;
   }
 
-  tbody.innerHTML = students
+  tbody.innerHTML = filteredStudents
     .map(
-      (student, index) => `
+      (student, index) => {
+        const isOwnData = currentUser && (currentUser.id === student.user_id || currentUser.user_id === student.user_id);
+        // Only show edit/delete buttons if it's own data or user is ADMIN/MANAGER/ASSISTANT_MANAGER/INSTRUCTOR
+        const showActions = isOwnData || isAdmin || isManager || isInstructor;
+        const showDelete = isAdmin || isManager || isInstructor; // Only ADMIN, MANAGER, ASSISTANT_MANAGER, and INSTRUCTOR can delete
+        
+        return `
     <tr>
       <td>${index + 1}</td>
       <td>${student.user_id || student.id || student.student_id}</td>
@@ -196,11 +227,14 @@ function displayStudents(students) {
       <td>${student.mother_name || ""}</td>
       <td>${student.advisor_name ? `${student.advisor_name} ${student.advisor_surname || ""}` : ""}</td>
       <td>
+        ${showActions ? `
         <button class="btn-small btn-edit" onclick="editStudent(${student.user_id || student.id || student.student_id})">Edit</button>
-        <button class="btn-small btn-delete" onclick="deleteStudent(${student.user_id || student.id || student.student_id})">Delete</button>
+        ${showDelete ? `<button class="btn-small btn-delete" onclick="deleteStudent(${student.user_id || student.id || student.student_id})">Delete</button>` : ''}
+        ` : '<span style="color: #999;">No actions available</span>'}
       </td>
     </tr>
-  `
+  `;
+      }
     )
     .join("");
 }

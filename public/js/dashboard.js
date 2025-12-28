@@ -44,13 +44,15 @@ const dashboardRoutes = {
   ],
   INSTRUCTOR: [
     { name: "My Programs", url: "/dashboard/instructor-my-programs.html" },
+    { name: "Instructors", url: "/dashboard/instructor.html" },
     { name: "Student", url: "/dashboard/student.html" },
     { name: "Meet Management", url: "/dashboard/meet.html" },
   ],
   STUDENT: [
     { name: "My Programs", url: "/dashboard/my-programs.html" },
     { name: "Choose Course", url: "/dashboard/choose-course.html" },
-    { name: "Grades & Meets", url: "/dashboard/grades-meets.html" },
+    { name: "Students", url: "/dashboard/student.html" },
+    { name: "My Meets", url: "/dashboard/grades-meets.html" },
   ],
 };
 

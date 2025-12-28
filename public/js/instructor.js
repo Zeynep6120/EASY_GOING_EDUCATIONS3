@@ -11,7 +11,7 @@ function checkAuth() {
     return false;
   }
   const user = getCurrentUser();
-  if (!user || (user.role !== "ADMIN" && user.role !== "MANAGER" && user.role !== "ASSISTANT_MANAGER")) {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MANAGER" && user.role !== "ASSISTANT_MANAGER" && user.role !== "INSTRUCTOR")) {
     window.location.href = "/unauthorized.html";
     return false;
   }
@@ -24,6 +24,13 @@ document.addEventListener("DOMContentLoaded", function() {
   
   if (typeof initHeader === "function") {
     initHeader();
+  }
+
+  // Hide "Add New Instructor" button if user is not ADMIN/MANAGER/ASSISTANT_MANAGER
+  const currentUser = getCurrentUser();
+  const addInstructorBtn = document.getElementById("addInstructorBtn");
+  if (addInstructorBtn && currentUser && !["ADMIN", "MANAGER", "ASSISTANT_MANAGER"].includes(currentUser.role)) {
+    addInstructorBtn.style.display = "none";
   }
 
   loadInstructors();
@@ -72,14 +79,37 @@ function displayInstructors(instructors) {
   const tbody = document.getElementById("instructorTableBody");
   if (!tbody) return;
 
-  if (instructors.length === 0) {
+  const currentUser = getCurrentUser();
+  const isAdmin = currentUser && currentUser.role === "ADMIN";
+  const isManager = currentUser && (currentUser.role === "MANAGER" || currentUser.role === "ASSISTANT_MANAGER");
+  const isInstructor = currentUser && currentUser.role === "INSTRUCTOR";
+
+  // If user is INSTRUCTOR, filter to show only their own data
+  let filteredInstructors = instructors;
+  if (isInstructor) {
+    const currentUserId = parseInt(currentUser.id || currentUser.user_id);
+    filteredInstructors = instructors.filter(
+      (instructor) => {
+        const instructorUserId = parseInt(instructor.user_id || instructor.id || instructor.instructor_id);
+        return currentUserId === instructorUserId;
+      }
+    );
+  }
+
+  if (filteredInstructors.length === 0) {
     tbody.innerHTML = "<tr><td colspan='9'>No instructors found</td></tr>";
     return;
   }
 
-  tbody.innerHTML = instructors
+  tbody.innerHTML = filteredInstructors
     .map(
-      (instructor, index) => `
+      (instructor, index) => {
+        const isOwnData = currentUser && (currentUser.id === instructor.user_id || currentUser.user_id === instructor.user_id);
+        // Only show edit/delete buttons if it's own data or user is ADMIN/MANAGER/ASSISTANT_MANAGER
+        const showActions = isOwnData || isAdmin || isManager;
+        const showDelete = isAdmin || isManager; // Only ADMIN and MANAGER can delete
+        
+        return `
     <tr>
       <td>${index + 1}</td>
       <td>${instructor.user_id || instructor.id || instructor.instructor_id}</td>
@@ -90,11 +120,14 @@ function displayInstructors(instructors) {
       <td>${instructor.title || "N/A"}</td>
       <td>${instructor.is_advisor_instructor ? "Yes" : "No"}</td>
       <td>
+        ${showActions ? `
         <button class="btn-small btn-edit" onclick="editInstructor(${instructor.user_id || instructor.id || instructor.instructor_id})">Edit</button>
-        <button class="btn-small btn-delete" onclick="deleteInstructor(${instructor.user_id || instructor.id || instructor.instructor_id})">Delete</button>
+        ${showDelete ? `<button class="btn-small btn-delete" onclick="deleteInstructor(${instructor.user_id || instructor.id || instructor.instructor_id})">Delete</button>` : ''}
+        ` : '<span style="color: #999;">No actions available</span>'}
       </td>
     </tr>
-  `
+  `;
+      }
     )
     .join("");
 }

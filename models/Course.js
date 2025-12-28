@@ -105,8 +105,8 @@ class Course {
   }
 
   static async delete(courseId) {
-    // Delete from all child tables first (foreign key constraints)
-    // Then delete from courses table
+    // Delete from courses table
+    // Note: No foreign key constraints reference courses.course_id in current schema
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
@@ -118,19 +118,26 @@ class Course {
         return null;
       }
       
-      // Delete from program_courses (child table)
-      await client.query("DELETE FROM program_courses WHERE course_id = $1", [courseId]);
-      
-      // Set course_id to NULL in students table (if column exists)
-      // Check if students.course_id column exists
-      const studentsCourseIdExists = await client.query(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.columns 
-          WHERE table_name = 'students' AND column_name = 'course_id'
-        )
-      `);
-      if (studentsCourseIdExists.rows[0].exists) {
-        await client.query("UPDATE students SET course_id = NULL WHERE course_id = $1", [courseId]);
+      // Update course_programs to set course_id to NULL if it exists
+      // (course_programs.course_id is not a foreign key, just a regular column)
+      try {
+        const courseProgramsCheck = await client.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'course_programs' 
+            AND column_name = 'course_id'
+          )
+        `);
+        if (courseProgramsCheck.rows[0].exists) {
+          await client.query("UPDATE course_programs SET course_id = NULL WHERE course_id = $1", [courseId]);
+          console.log(`Updated course_programs for course ${courseId}`);
+        }
+      } catch (err) {
+        // Table might not exist or column doesn't exist, ignore
+        if (err.code !== '42P01' && err.code !== '42703') {
+          console.log(`course_programs update skipped: ${err.message}`);
+        }
       }
       
       // Delete from courses (parent table)
@@ -139,10 +146,19 @@ class Course {
         [courseId]
       );
       
+      if (result.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return null;
+      }
+      
       await client.query("COMMIT");
       return result.rows[0];
     } catch (e) {
-      await client.query("ROLLBACK");
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackErr) {
+        console.error("Error during rollback:", rollbackErr);
+      }
       console.error("Error deleting course:", e);
       throw e;
     } finally {
