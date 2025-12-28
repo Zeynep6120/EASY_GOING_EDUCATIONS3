@@ -373,9 +373,10 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
       updates.push(`ssn = $${paramCount++}`);
       values.push(ssn || null);
     }
+    let hashedPassword = null;
     if (password) {
       const bcrypt = require("bcryptjs");
-      const hashedPassword = await bcrypt.hash(password, 10);
+      hashedPassword = await bcrypt.hash(password, 10);
       updates.push(`password = $${paramCount++}`);
       values.push(hashedPassword);
     }
@@ -387,41 +388,68 @@ router.put("/update", authenticateToken, requireMinRole("ASSISTANT_MANAGER"), as
     }
 
     // Also update instructors table with all fields
+    // Get updated user data after users table update
+    const updatedUser = await User.findById(id, client);
+    if (!updatedUser) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "User not found after update" });
+    }
+    
+    // Get current instructor data for fallback values (for title, bio, image, social_links)
+    const currentInstructorResult = await client.query(
+      'SELECT * FROM instructors WHERE instructor_id = $1',
+      [id]
+    );
+    const currentInstructor = currentInstructorResult.rows[0] || null;
+
+    // Always update instructors table - use INSERT ... ON CONFLICT for upsert
+    // Get the final values to use - prioritize request params, then updated user data, then current instructor data
+    const finalName = name !== undefined ? name : (updatedUser.name || currentInstructor?.name || '');
+    const finalSurname = surname !== undefined ? surname : (updatedUser.surname || currentInstructor?.surname || '');
+    const finalUsername = username !== undefined ? username : (updatedUser.username || currentInstructor?.username || '');
+    const finalEmail = email !== undefined ? email : (updatedUser.email || currentInstructor?.email || '');
+    const finalTitle = title !== undefined ? (title || null) : (currentInstructor?.title || null);
+    const finalBio = bio !== undefined ? (bio || null) : (currentInstructor?.bio || null);
+    const finalPassword = hashedPassword || currentInstructor?.password || null;
+
+    // Use INSERT ... ON CONFLICT DO UPDATE to ensure the record exists and is updated
+    console.log("Updating instructors table with values:", {
+      id,
+      finalName,
+      finalSurname,
+      finalUsername,
+      finalEmail,
+      finalTitle,
+      finalBio,
+      hasPassword: !!finalPassword,
+      currentInstructorExists: !!currentInstructor
+    });
+    
     try {
-      // Get current user data for fallback values
-      const currentUser = await User.findById(id, client);
-      const currentInstructor = await client.query(
-        'SELECT * FROM instructors WHERE instructor_id = $1',
-        [id]
-      ).then(r => r.rows[0]);
-
-      const updateName = name !== undefined ? name : (currentUser?.name || currentInstructor?.name);
-      const updateSurname = surname !== undefined ? surname : (currentUser?.surname || currentInstructor?.surname);
-      const updateUsername = username !== undefined ? username : (currentUser?.username || currentInstructor?.username);
-      const updateEmail = email !== undefined ? email : (currentUser?.email || currentInstructor?.email);
-      const updatePassword = password ? hashedPassword : (currentInstructor?.password || null);
-      const updateTitle = title !== undefined ? title : (currentInstructor?.title || null);
-      const updateBio = bio !== undefined ? bio : (currentInstructor?.bio || null);
-
-      if (name !== undefined || surname !== undefined || username !== undefined || email !== undefined || password || title !== undefined || bio !== undefined) {
-        await client.query(
-          `INSERT INTO instructors (instructor_id, name, surname, username, email, title, bio, password)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-           ON CONFLICT (instructor_id) DO UPDATE SET
-             name = COALESCE(EXCLUDED.name, instructors.name),
-             surname = COALESCE(EXCLUDED.surname, instructors.surname),
-             username = COALESCE(EXCLUDED.username, instructors.username),
-             email = COALESCE(EXCLUDED.email, instructors.email),
-             title = COALESCE(EXCLUDED.title, instructors.title),
-             bio = COALESCE(EXCLUDED.bio, instructors.bio),
-             password = COALESCE(EXCLUDED.password, instructors.password)`,
-          [id, updateName, updateSurname, updateUsername, updateEmail, updateTitle, updateBio, updatePassword]
-        );
-        console.log("Instructor record updated in instructors table");
-      }
+      const result = await client.query(
+        `INSERT INTO instructors (instructor_id, name, surname, username, email, title, bio, password)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (instructor_id) DO UPDATE SET
+           name = EXCLUDED.name,
+           surname = EXCLUDED.surname,
+           username = EXCLUDED.username,
+           email = EXCLUDED.email,
+           title = EXCLUDED.title,
+           bio = EXCLUDED.bio,
+           password = EXCLUDED.password
+         RETURNING *`,
+        [id, finalName, finalSurname, finalUsername, finalEmail, finalTitle, finalBio, finalPassword]
+      );
+      console.log("Instructor record updated in instructors table:", result.rows[0]);
     } catch (instructorError) {
-      console.warn("Could not update instructors table:", instructorError.message);
-      // Continue even if instructors table update fails
+      console.error("Error updating instructors table:", instructorError);
+      console.error("Error details:", {
+        message: instructorError.message,
+        code: instructorError.code,
+        detail: instructorError.detail,
+        stack: instructorError.stack
+      });
+      throw instructorError; // Re-throw to trigger rollback
     }
 
     await client.query("COMMIT");

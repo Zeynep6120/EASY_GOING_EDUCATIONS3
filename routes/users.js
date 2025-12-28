@@ -133,37 +133,67 @@ router.get("/users/:id", authenticateToken, async (req, res) => {
 
 // PATCH /api/users/:id/status  { is_active: boolean }
 router.patch("/users/:id/status", authenticateToken, async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query("BEGIN");
+
     const role = normalizeRole(req.user.role);
     const targetId = Number(req.params.id);
     const { is_active } = req.body || {};
 
     if (typeof is_active !== "boolean") {
+      await client.query("ROLLBACK");
       return res.status(400).json({ message: "is_active must be boolean" });
     }
 
     // Only ADMIN and MANAGER can change status
     if (role !== "ADMIN" && role !== "MANAGER") {
+      await client.query("ROLLBACK");
       return res.status(403).json({ message: "Forbidden" });
     }
 
     // Manager cannot change ADMIN status
-    const targetRoleRes = await pool.query("SELECT role FROM users WHERE user_id = $1", [targetId]);
-    if (targetRoleRes.rowCount === 0) return res.status(404).json({ message: "Not found" });
+    const targetRoleRes = await client.query("SELECT role FROM users WHERE user_id = $1", [targetId]);
+    if (targetRoleRes.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "Not found" });
+    }
     const targetRole = normalizeRole(targetRoleRes.rows[0].role);
     if (role === "MANAGER" && targetRole === "ADMIN") {
+      await client.query("ROLLBACK");
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const result = await pool.query(
+    // Update users table
+    const result = await client.query(
       "UPDATE users SET is_active = $2 WHERE user_id = $1 RETURNING user_id, username, role, is_active",
       [targetId, is_active]
     );
 
+    // Update role-specific specialization tables
+    if (targetRole === "ADMIN") {
+      await client.query("UPDATE admins SET is_active = $2 WHERE admin_id = $1", [targetId, is_active]);
+      console.log("Admin record is_active updated in admins table");
+    } else if (targetRole === "MANAGER") {
+      await client.query("UPDATE managers SET is_active = $2 WHERE manager_id = $1", [targetId, is_active]);
+      console.log("Manager record is_active updated in managers table");
+    } else if (targetRole === "ASSISTANT_MANAGER") {
+      await client.query("UPDATE assistant_managers SET is_active = $2 WHERE assistant_manager_id = $1", [targetId, is_active]);
+      console.log("Assistant Manager record is_active updated in assistant_managers table");
+    } else if (targetRole === "STUDENT") {
+      await client.query("UPDATE students SET is_active = $2 WHERE student_id = $1", [targetId, is_active]);
+      console.log("Student record is_active updated in students table");
+    }
+    // Note: instructors table doesn't have is_active column
+
+    await client.query("COMMIT");
     res.json(result.rows[0]);
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("PATCH /users/:id/status error:", error);
     res.status(500).json({ message: "Server error" });
+  } finally {
+    client.release();
   }
 });
 
@@ -403,6 +433,7 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
       birth_place,
       phone_number,
       ssn,
+      is_active,
     } = req.body;
 
     // Check if user exists
@@ -475,6 +506,10 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
       updates.push(`ssn = $${paramCount++}`);
       values.push(ssn || null);
     }
+    if (is_active !== undefined) {
+      updates.push(`is_active = $${paramCount++}`);
+      values.push(is_active);
+    }
     if (password) {
       const bcrypt = require("bcryptjs");
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -494,6 +529,96 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
     // Update role-specific specialization tables
     const currentRole = normalizeRole(existingUser.rows[0].role);
     const updatedRole = newRole ? normalizeRole(newRole) : currentRole;
+    const updatedUserData = result.rows[0]; // Get the updated user data including is_active
+
+    // If user is an ADMIN, also update admins table
+    if (currentRole === "ADMIN" || updatedRole === "ADMIN") {
+      const adminUpdates = [];
+      const adminValues = [];
+      let adminParamCount = 1;
+
+      if (username) {
+        adminUpdates.push(`username = $${adminParamCount++}`);
+        adminValues.push(username);
+      }
+      if (name) {
+        adminUpdates.push(`name = $${adminParamCount++}`);
+        adminValues.push(name);
+      }
+      if (surname) {
+        adminUpdates.push(`surname = $${adminParamCount++}`);
+        adminValues.push(surname);
+      }
+      if (email) {
+        adminUpdates.push(`email = $${adminParamCount++}`);
+        adminValues.push(email);
+      }
+      if (gender !== undefined) {
+        adminUpdates.push(`gender = $${adminParamCount++}`);
+        adminValues.push(gender || null);
+      }
+      if (birth_date !== undefined) {
+        adminUpdates.push(`birth_date = $${adminParamCount++}`);
+        adminValues.push(birth_date || null);
+      }
+      if (birth_place !== undefined) {
+        adminUpdates.push(`birth_place = $${adminParamCount++}`);
+        adminValues.push(birth_place || null);
+      }
+      if (phone_number !== undefined) {
+        adminUpdates.push(`phone_number = $${adminParamCount++}`);
+        adminValues.push(phone_number || null);
+      }
+      if (ssn !== undefined) {
+        adminUpdates.push(`ssn = $${adminParamCount++}`);
+        adminValues.push(ssn || null);
+      }
+      // Update is_active if it was changed
+      if (is_active !== undefined) {
+        adminUpdates.push(`is_active = $${adminParamCount++}`);
+        adminValues.push(is_active);
+      } else {
+        // Use current value from updated user data
+        adminUpdates.push(`is_active = $${adminParamCount++}`);
+        adminValues.push(updatedUserData.is_active !== undefined ? updatedUserData.is_active : true);
+      }
+
+      if (adminUpdates.length > 0) {
+        adminValues.push(targetId);
+        const adminQuery = `UPDATE admins SET ${adminUpdates.join(", ")} WHERE admin_id = $${adminParamCount}`;
+        await client.query(adminQuery, adminValues);
+        console.log("Admin record updated in admins table");
+      }
+
+      // If role is being changed to ADMIN, ensure admin record exists
+      if (updatedRole === "ADMIN" && currentRole !== "ADMIN") {
+        const adminExists = await client.query("SELECT 1 FROM admins WHERE admin_id = $1", [targetId]);
+        if (adminExists.rows.length === 0) {
+          // Create admin record
+          const u = updatedUserData;
+          await client.query(
+            `INSERT INTO admins (
+              admin_id, username, name, surname, email, gender, 
+              birth_date, birth_place, phone_number, ssn, is_active
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+            [
+              targetId,
+              u.username,
+              u.name,
+              u.surname,
+              u.email,
+              u.gender || null,
+              u.birth_date || null,
+              u.birth_place || null,
+              u.phone_number || null,
+              u.ssn || null,
+              u.is_active !== undefined ? u.is_active : true,
+            ]
+          );
+          console.log("Admin record created in admins table for role change");
+        }
+      }
+    }
 
     // If user is a MANAGER, also update managers table
     if (currentRole === "MANAGER" || updatedRole === "MANAGER") {
@@ -536,6 +661,15 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
       if (ssn !== undefined) {
         managerUpdates.push(`ssn = $${managerParamCount++}`);
         managerValues.push(ssn || null);
+      }
+      // Update is_active if it was changed
+      if (is_active !== undefined) {
+        managerUpdates.push(`is_active = $${managerParamCount++}`);
+        managerValues.push(is_active);
+      } else {
+        // Use current value from updated user data
+        managerUpdates.push(`is_active = $${managerParamCount++}`);
+        managerValues.push(updatedUserData.is_active !== undefined ? updatedUserData.is_active : true);
       }
 
       if (managerUpdates.length > 0) {
@@ -620,6 +754,15 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
         assistantManagerUpdates.push(`ssn = $${assistantManagerParamCount++}`);
         assistantManagerValues.push(ssn || null);
       }
+      // Update is_active if it was changed
+      if (is_active !== undefined) {
+        assistantManagerUpdates.push(`is_active = $${assistantManagerParamCount++}`);
+        assistantManagerValues.push(is_active);
+      } else {
+        // Use current value from updated user data
+        assistantManagerUpdates.push(`is_active = $${assistantManagerParamCount++}`);
+        assistantManagerValues.push(updatedUserData.is_active !== undefined ? updatedUserData.is_active : true);
+      }
 
       if (assistantManagerUpdates.length > 0) {
         assistantManagerValues.push(targetId);
@@ -703,6 +846,15 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
         studentUpdates.push(`ssn = $${studentParamCount++}`);
         studentValues.push(ssn || null);
       }
+      // Update is_active if it was changed
+      if (is_active !== undefined) {
+        studentUpdates.push(`is_active = $${studentParamCount++}`);
+        studentValues.push(is_active);
+      } else {
+        // Use current value from updated user data
+        studentUpdates.push(`is_active = $${studentParamCount++}`);
+        studentValues.push(updatedUserData.is_active !== undefined ? updatedUserData.is_active : true);
+      }
 
       if (studentUpdates.length > 0) {
         studentValues.push(targetId);
@@ -767,6 +919,7 @@ router.put("/users/:id", authenticateToken, async (req, res) => {
         instructorUpdates.push(`email = $${instructorParamCount++}`);
         instructorValues.push(email);
       }
+      // Note: instructors table doesn't have is_active column, so we skip it
 
       if (instructorUpdates.length > 0) {
         instructorValues.push(targetId);
