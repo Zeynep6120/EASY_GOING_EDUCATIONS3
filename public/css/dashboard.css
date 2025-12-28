@@ -1,0 +1,592 @@
+/* Dashboard Styles */
+.dashboard-section {
+  padding: 3rem 0;
+  min-height: calc(100vh - 200px);
+}
+
+.dashboard-welcome {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-welcome p {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.dashboard-welcome span {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.dashboard-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.dashboard-nav-item {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+  text-decoration: none;
+  color: #333;
+}
+
+.dashboard-nav-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-nav-item h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1a1a1a;
+}
+
+.dashboard-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.page-title {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  color: #1a1a1a;
+}
+
+/* Tabs */
+.tabs-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.tab-btn {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.tab-btn:hover {
+  color: #667eea;
+}
+
+.tab-btn.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Programs Grid */
+.programs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.program-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+  border: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+}
+
+.program-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.program-card.available-program {
+  border-left: 4px solid #667eea;
+}
+
+.program-card.enrolled-program {
+  border-left: 4px solid #28a745;
+  background: linear-gradient(to right, rgba(40, 167, 69, 0.05) 0%, white 10%);
+}
+
+.program-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.program-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: rgb(16, 68, 81);
+  font-weight: 600;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.program-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #667eea;
+  color: white;
+  margin-left: 0.75rem;
+  white-space: nowrap;
+}
+
+.program-badge.enrolled-badge {
+  background: #28a745;
+}
+
+.program-details {
+  flex: 1;
+  margin-bottom: 1rem;
+}
+
+.program-detail-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.program-detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-icon {
+  font-size: 1.1rem;
+  margin-right: 0.75rem;
+  width: 24px;
+  text-align: center;
+}
+
+.program-actions {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.enroll-btn {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.enroll-btn:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.no-programs-message {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #666;
+}
+
+.no-programs-message p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  color: rgb(16, 68, 81);
+}
+
+.dashboard-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Meets Grid */
+.meets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.meet-card {
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.meet-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Grades Table Styles */
+.grades-table-container {
+  overflow-x: auto;
+  margin-top: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.grades-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.grades-table thead {
+  background: linear-gradient(135deg, rgb(16, 68, 81) 0%, rgb(14.4, 61.2, 72.9) 100%);
+  color: white;
+}
+
+.grades-table thead th {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.grades-table thead th:nth-child(3),
+.grades-table thead th:nth-child(4),
+.grades-table thead th:nth-child(5),
+.grades-table thead th:nth-child(6),
+.grades-table thead th:nth-child(7) {
+  text-align: center;
+}
+
+.grade-row {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s;
+}
+
+.grade-row:hover {
+  background: #f8f9fa;
+}
+
+.grade-row:last-child {
+  border-bottom: none;
+}
+
+.grade-cell {
+  padding: 1rem 1.25rem;
+  vertical-align: middle;
+}
+
+.lesson-cell {
+  font-weight: 500;
+  color: rgb(16, 68, 81);
+}
+
+.lesson-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lesson-icon {
+  font-size: 1.25rem;
+}
+
+.lesson-name {
+  font-weight: 600;
+}
+
+.term-cell {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.number-cell {
+  text-align: center;
+  font-weight: 500;
+}
+
+.number-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #e9ecef;
+  color: #495057;
+  min-width: 40px;
+  text-align: center;
+}
+
+.number-badge.warning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.average-badge,
+.note-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: 2px solid;
+  min-width: 60px;
+  text-align: center;
+}
+
+.note-badge {
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+}
+
+.no-data-cell {
+  padding: 3rem 1rem !important;
+  text-align: center;
+}
+
+.no-data-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: #666;
+}
+
+.no-data-icon {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+.no-data-message p {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.no-data-message small {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+/* Meets Grid Styles */
+.meets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.meet-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+  border: 1px solid #e0e0e0;
+  border-left: 4px solid #6c757d;
+}
+
+.meet-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.meet-card.upcoming-meet {
+  border-left-color: #28a745;
+  background: linear-gradient(to right, rgba(40, 167, 69, 0.03) 0%, white 5%);
+}
+
+.meet-card.today-meet {
+  border-left-color: #ffc107;
+  background: linear-gradient(to right, rgba(255, 193, 7, 0.05) 0%, white 5%);
+  box-shadow: 0 2px 12px rgba(255, 193, 7, 0.2);
+}
+
+.meet-card.past-meet {
+  border-left-color: #6c757d;
+  opacity: 0.85;
+}
+
+.meet-header {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.meet-instructor {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.instructor-icon {
+  font-size: 2rem;
+}
+
+.instructor-info {
+  flex: 1;
+}
+
+.instructor-info h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: rgb(16, 68, 81);
+  font-weight: 600;
+}
+
+.meet-status {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-upcoming {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-past {
+  background: #e9ecef;
+  color: #6c757d;
+}
+
+.meet-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.meet-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.detail-icon {
+  font-size: 1.1rem;
+  width: 24px;
+  text-align: center;
+}
+
+.no-meets-message {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #666;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.no-meets-message .no-data-icon {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+.no-meets-message p {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.no-meets-message small {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-nav-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .tabs-container {
+    flex-direction: column;
+  }
+  
+  .tab-btn {
+    width: 100%;
+    text-align: left;
+  }
+  
+  .programs-grid,
+  .meets-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .grades-table-container {
+    overflow-x: scroll;
+  }
+
+  .grades-table thead th {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .grade-cell {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .lesson-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
+

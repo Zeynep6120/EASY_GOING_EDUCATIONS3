@@ -1,0 +1,13 @@
+// Main SCSS file - Import all styles
+@use "variables" as *;
+@use "mixins" as *;
+@use "base";
+@use "header";
+@use "footer";
+@use "home";
+@use "dashboard";
+@use "login";
+@use "contact";
+@use "instructor";
+@use "courses";
+

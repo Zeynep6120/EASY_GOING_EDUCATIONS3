@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Öğrenci Detayları</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Öğrenci Detaylarını Tamamla</h1>
+      <form id="detailsForm">
+        <input type="text" id="fatherName" placeholder="Baba Adı" required />
+        <input type="text" id="motherName" placeholder="Anne Adı" required />
+        <select id="advisorTeacher" required>
+          <option value="">Danışman Öğretmen Seç</option>
+          <!-- Öğretmenler dinamik olarak yüklenecek -->
+        </select>
+        <button type="submit">Kaydet</button>
+      </form>
+      <p id="message"></p>
+      <button id="backBtn">Geri</button>
+    </div>
+    <script src="js/details.js"></script>
+  </body>
+</html>

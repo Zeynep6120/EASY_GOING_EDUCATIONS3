@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Instructor Programs Management - Dashboard</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header id="main-header">
+      <div class="container">
+        <div class="logo">
+          <a href="/home.html">
+            <img src="/img/logos/logo-dark.png" alt="EasyGoing Education" style="height: 40px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <span style="display: none;">EasyGoing Education</span>
+          </a>
+        </div>
+        <nav class="nav-menu">
+          <a href="/home.html">Home</a>
+          <a href="/dashboard.html" class="nav-dashboard">Dashboard</a>
+          <a href="#" class="nav-logout" style="display: none">Logout</a>
+          <a href="/index.html#register" class="nav-register" style="display: none">Register</a>
+          <a href="/index.html" class="nav-login">Login</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Instructor Programs Management</h1>
+        <a href="/dashboard.html" class="btn-secondary">Back to Dashboard</a>
+      </div>
+
+      <div class="dashboard-content">
+        <div class="dashboard-actions">
+          <button id="addInstructorProgramBtn" class="btn-primary">Add New Instructor Program</button>
+        </div>
+
+        <div id="instructorProgramTableContainer">
+          <table id="instructorProgramTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Instructor ID</th>
+                <th>Instructor Name</th>
+                <th>Instructor Surname</th>
+                <th>Instructor Email</th>
+                <th>Instructor Username</th>
+                <th>Program ID</th>
+                <th>Day</th>
+                <th>Time</th>
+                <th>Term</th>
+                <th>Course ID</th>
+                <th>Course Name</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="instructorProgramTableBody">
+              <!-- Instructor Programs will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="instructorProgramMessage" class="message"></div>
+      </div>
+    </div>
+
+    <!-- Add Instructor Program Modal -->
+    <div id="instructorProgramModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modalTitle">Add Instructor Program</h2>
+        <form id="instructorProgramForm">
+          <div class="form-group">
+            <label for="instructorId">Instructor *</label>
+            <select id="instructorId" required>
+              <option value="">Select Instructor</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="lessonProgramId">Program *</label>
+            <select id="lessonProgramId" required>
+              <option value="">Select Program</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/header.js"></script>
+    <script src="../js/instructor-programs.js"></script>
+  </body>
+</html>
+

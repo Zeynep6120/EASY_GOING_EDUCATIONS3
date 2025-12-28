@@ -1,0 +1,175 @@
+@use "sass:color";
+@use "variables" as *;
+@use "mixins" as *;
+
+// Base styles
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: $font-family;
+  background: $color1-op-10;
+  color: $color2;
+  line-height: 1.6;
+}
+
+.container {
+  @include container;
+}
+
+// Typography
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  margin-bottom: $spacing-sm;
+  color: $color2;
+  font-family: $font-family;
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.05rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+p {
+  margin-bottom: $spacing-sm;
+}
+
+a {
+  color: $color1;
+  text-decoration: none;
+  @include transition(color 0.3s);
+
+  &:hover {
+    color: color.scale($color1, $lightness: -10%);
+  }
+}
+
+// Section Title (like Next.js project)
+.section-title {
+  text-align: center;
+  color: $color1;
+  margin-bottom: 20px;
+  font-size: 2.5rem;
+  letter-spacing: 0.3rem;
+  @include shadow(text, 0 3px 3px $color2);
+}
+
+// Buttons
+.btn {
+  @include button-primary;
+  display: inline-block;
+  text-align: center;
+
+  &.btn-primary {
+    background: $color2;
+    color: $white;
+    
+    &:hover {
+      background: color.scale($color2, $lightness: -10%);
+    }
+  }
+
+  &.btn-secondary {
+    @include button-secondary;
+  }
+
+  &.btn-outline {
+    background: transparent;
+    border: 2px solid $color2;
+    color: $color2;
+
+    &:hover {
+      background: $color2;
+      color: $white;
+    }
+  }
+
+  &.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+// Forms
+.form-group {
+  margin-bottom: $spacing-md;
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: $spacing-xs;
+    color: $color2;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid $border-color;
+    border-radius: $border-radius;
+    font-size: 1rem;
+    font-family: inherit;
+    @include transition(border-color 0.3s);
+
+    &:focus {
+      outline: none;
+      border-color: $color1;
+      box-shadow: 0 0 0 3px $color1-op-10;
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+}
+
+// Messages
+.message {
+  padding: $spacing-sm;
+  border-radius: $border-radius;
+  margin-top: $spacing-sm;
+
+  &.success {
+    background: color.scale($success-color, $lightness: 45%);
+    color: color.scale($success-color, $lightness: -10%);
+  }
+
+  &.error {
+    background: color.scale($error-color, $lightness: 45%);
+    color: color.scale($error-color, $lightness: -10%);
+  }
+}
+
+// Utilities
+.hidden {
+  display: none;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-1 { margin-top: $spacing-xs; }
+.mt-2 { margin-top: $spacing-sm; }
+.mt-3 { margin-top: $spacing-md; }
+.mt-4 { margin-top: $spacing-lg; }
+
+.mb-1 { margin-bottom: $spacing-xs; }
+.mb-2 { margin-bottom: $spacing-sm; }
+.mb-3 { margin-bottom: $spacing-md; }
+.mb-4 { margin-bottom: $spacing-lg; }
+

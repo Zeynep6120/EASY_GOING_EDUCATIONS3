@@ -1,0 +1,45 @@
+/* COMMON - EasyGoing Education Color Palette */
+$color1: rgb(250, 197, 76); // Golden yellow - secondary/accent color
+$color2: rgb(16, 68, 81); // Dark teal - primary color
+$color3: rgb(237, 237, 237); // Light gray
+$color4: rgb(7, 27, 32); // Very dark teal
+$color5: rgb(140, 186, 216); // Light blue
+
+// Opacity variants
+$color1-op-50: rgba(250, 197, 76, 0.5);
+$color2-op-50: rgba(16, 68, 81, 0.5);
+$color1-op-30: rgba(250, 197, 76, 0.3);
+$color2-op-30: rgba(16, 68, 81, 0.3);
+$color1-op-10: rgb(254, 247, 231); // Very light yellow background
+$color2-op-10: rgba(16, 68, 81, 0.1);
+
+// Legacy variable names for compatibility
+$primary-color: $color2;
+$secondary-color: $color1;
+$text-color: $color2;
+$text-light: rgba(16, 68, 81, 0.7);
+$bg-light: $color3;
+$white: #ffffff;
+$border-color: rgba(16, 68, 81, 0.2);
+$success-color: #28a745;
+$error-color: #dc3545;
+$warning-color: $color1;
+
+$font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+
+$spacing-xs: 0.5rem;
+$spacing-sm: 1rem;
+$spacing-md: 1.5rem;
+$spacing-lg: 2rem;
+$spacing-xl: 3rem;
+
+$border-radius: 6px;
+$border-radius-lg: 12px;
+
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+
+$vendors: ("", "-webkit-", "-moz-", "-ms-", "-o-");
+

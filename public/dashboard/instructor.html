@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Instructor Management - Dashboard</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header id="main-header">
+      <div class="container">
+        <div class="logo">
+          <a href="/home.html">
+            <img src="/img/logos/logo-dark.png" alt="EasyGoing Education" style="height: 40px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <span style="display: none;">EasyGoing Education</span>
+          </a>
+        </div>
+        <nav class="nav-menu">
+          <a href="/home.html">Home</a>
+          <a href="/dashboard.html" class="nav-dashboard">Dashboard</a>
+          <a href="#" class="nav-logout" style="display: none">Logout</a>
+          <a href="/index.html#register" class="nav-register" style="display: none">Register</a>
+          <a href="/index.html" class="nav-login">Login</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Instructor Management</h1>
+        <a href="/dashboard.html" class="btn-secondary">Back to Dashboard</a>
+      </div>
+
+      <div class="dashboard-content">
+        <div class="dashboard-actions">
+          <button id="addInstructorBtn" class="btn-primary">Add New Instructor</button>
+        </div>
+
+        <div id="instructorTableContainer">
+          <table id="instructorTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Surname</th>
+                <th>Email</th>
+                <th>Title</th>
+                <th>Advisor Instructor</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="instructorTableBody">
+              <!-- Instructors will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="instructorMessage" class="message"></div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Instructor Modal -->
+    <div id="instructorModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modalTitle">Add Instructor</h2>
+        <form id="instructorForm">
+          <input type="hidden" id="instructorId" />
+          <div class="form-group">
+            <label for="instructorUsername">Username *</label>
+            <input type="text" id="instructorUsername" required />
+          </div>
+          <div class="form-group">
+            <label for="instructorPassword">Password *</label>
+            <input type="password" id="instructorPassword" />
+            <small>Leave empty to keep current password</small>
+          </div>
+          <div class="form-group">
+            <label for="instructorName">Name *</label>
+            <input type="text" id="instructorName" required />
+          </div>
+          <div class="form-group">
+            <label for="instructorSurname">Surname *</label>
+            <input type="text" id="instructorSurname" required />
+          </div>
+          <div class="form-group">
+            <label for="instructorEmail">Email *</label>
+            <input type="email" id="instructorEmail" required />
+          </div>
+          <div class="form-group">
+            <label for="instructorGender">Gender</label>
+            <select id="instructorGender">
+              <option value="">Select Gender</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="instructorBirthDate">Birth Date</label>
+            <input type="date" id="instructorBirthDate" />
+          </div>
+          <div class="form-group">
+            <label for="instructorBirthPlace">Birth Place</label>
+            <input type="text" id="instructorBirthPlace" />
+          </div>
+          <div class="form-group">
+            <label for="instructorPhone">Phone Number</label>
+            <input type="tel" id="instructorPhone" />
+          </div>
+          <div class="form-group">
+            <label for="instructorSSN">SSN</label>
+            <input type="text" id="instructorSSN" />
+          </div>
+          <div class="form-group">
+            <label for="instructorTitle">Title</label>
+            <input type="text" id="instructorTitle" placeholder="e.g., Senior Web Development Instructor" />
+          </div>
+          <div class="form-group">
+            <label for="instructorBio">Bio</label>
+            <textarea id="instructorBio" rows="4" placeholder="Enter instructor biography..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="instructorIsAdvisor" />
+              Is Advisor Instructor
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/header.js"></script>
+    <script src="../js/instructor.js"></script>
+  </body>
+</html>
+

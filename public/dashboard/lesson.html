@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lesson Management - Dashboard</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header id="main-header">
+      <div class="container">
+        <div class="logo">
+          <a href="/home.html">
+            <img src="/img/logos/logo-dark.png" alt="EasyGoing Education" style="height: 40px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <span style="display: none;">EasyGoing Education</span>
+          </a>
+        </div>
+        <nav class="nav-menu">
+          <a href="/home.html">Home</a>
+          <a href="/dashboard.html" class="nav-dashboard">Dashboard</a>
+          <a href="#" class="nav-logout" style="display: none">Logout</a>
+          <a href="/index.html#register" class="nav-register" style="display: none">Register</a>
+          <a href="/index.html" class="nav-login">Login</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Lesson Management</h1>
+        <a href="/dashboard.html" class="btn-secondary">Back to Dashboard</a>
+      </div>
+
+      <div class="dashboard-content">
+        <div class="dashboard-actions">
+          <button id="addLessonBtn" class="btn-primary">Add New Lesson</button>
+        </div>
+
+        <div id="lessonTableContainer">
+          <table id="lessonTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>ID</th>
+                <th>Lesson Name</th>
+                <th>Credit Score</th>
+                <th>Compulsory</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="lessonTableBody">
+              <!-- Lessons will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="lessonMessage" class="message"></div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Lesson Modal -->
+    <div id="lessonModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modalTitle">Add Lesson</h2>
+        <form id="lessonForm">
+          <input type="hidden" id="lessonId" />
+          <div class="form-group">
+            <label for="lessonName">Lesson Name *</label>
+            <input type="text" id="lessonName" required />
+          </div>
+          <div class="form-group">
+            <label for="lessonCreditScore">Credit Score *</label>
+            <input type="number" id="lessonCreditScore" min="0" step="0.5" required />
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="lessonCompulsory" />
+              Compulsory
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/header.js"></script>
+    <script src="../js/lesson.js"></script>
+  </body>
+</html>
+

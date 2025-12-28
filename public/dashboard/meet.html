@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meet Management - Dashboard</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/dashboard.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header id="main-header">
+      <div class="container">
+        <div class="logo">
+          <a href="/home.html">
+            <img src="/img/logos/logo-dark.png" alt="EasyGoing Education" style="height: 40px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <span style="display: none;">EasyGoing Education</span>
+          </a>
+        </div>
+        <nav class="nav-menu">
+          <a href="/home.html">Home</a>
+          <a href="/dashboard.html" class="nav-dashboard">Dashboard</a>
+          <a href="#" class="nav-logout" style="display: none">Logout</a>
+          <a href="/index.html#register" class="nav-register" style="display: none">Register</a>
+          <a href="/index.html" class="nav-login">Login</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Meet Management</h1>
+        <a href="/dashboard.html" class="btn-secondary">Back to Dashboard</a>
+      </div>
+
+      <div class="dashboard-content">
+        <div class="dashboard-actions">
+          <button id="addMeetBtn" class="btn-primary">Add New Meet</button>
+        </div>
+
+        <div id="meetMessage" class="message"></div>
+
+        <div id="meetsTableContainer">
+          <table id="meetsTable" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f5f5f5;">
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd;">#</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd;">ID</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd;">Date</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd;">Time</th>
+                <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd;">Description</th>
+                <th style="padding: 0.75rem; text-align: center; border-bottom: 2px solid #ddd;">Students</th>
+                <th style="padding: 0.75rem; text-align: center; border-bottom: 2px solid #ddd;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="meetsTableBody">
+              <!-- Meets will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Meet Modal -->
+    <div id="meetModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="meetModalTitle">Add Meet</h2>
+        <form id="meetForm">
+          <input type="hidden" id="meetId" />
+          <div class="form-group">
+            <label for="meetDate">Date *</label>
+            <input type="date" id="meetDate" required />
+          </div>
+          <div class="form-group">
+            <label for="meetStartTime">Start Time *</label>
+            <input type="time" id="meetStartTime" required />
+          </div>
+          <div class="form-group">
+            <label for="meetStopTime">Stop Time *</label>
+            <input type="time" id="meetStopTime" required />
+          </div>
+          <div class="form-group">
+            <label for="meetDescription">Description</label>
+            <textarea id="meetDescription" rows="4"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" class="btn-secondary" id="cancelMeetBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Manage Students Modal -->
+    <div id="studentsModal" class="modal" style="display: none">
+      <div class="modal-content" style="max-width: 600px;">
+        <span class="close-students">&times;</span>
+        <h2 id="studentsModalTitle">Manage Students</h2>
+        <div id="studentsMessage" class="message" style="margin-bottom: 1rem;"></div>
+        
+        <div class="form-group">
+          <label for="studentSelect">Add Student:</label>
+          <select id="studentSelect" style="width: 100%; padding: 0.5rem;">
+            <option value="">Select Student</option>
+          </select>
+          <button type="button" class="btn-primary" id="addStudentBtn" style="margin-top: 0.5rem;">Add Student</button>
+        </div>
+
+        <div id="enrolledStudentsList" style="margin-top: 2rem;">
+          <h3>Enrolled Students</h3>
+          <div id="enrolledStudents" style="margin-top: 1rem;">
+            <!-- Enrolled students will be loaded here -->
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top: 2rem;">
+          <button type="button" class="btn-secondary" id="closeStudentsBtn">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/header.js"></script>
+    <script src="../js/meet.js"></script>
+  </body>
+</html>
+

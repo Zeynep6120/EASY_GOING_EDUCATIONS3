@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Slides Management - Dashboard</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header id="main-header">
+      <div class="container">
+        <div class="logo">
+          <a href="/home.html">
+            <img src="/img/logos/logo-dark.png" alt="EasyGoing Education" style="height: 40px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <span style="display: none;">EasyGoing Education</span>
+          </a>
+        </div>
+        <nav class="nav-menu">
+          <a href="/home.html">Home</a>
+          <a href="/dashboard.html" class="nav-dashboard">Dashboard</a>
+          <a href="#" class="nav-logout" style="display: none">Logout</a>
+          <a href="/index.html#register" class="nav-register" style="display: none">Register</a>
+          <a href="/index.html" class="nav-login">Login</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Slides Management</h1>
+        <a href="/dashboard.html" class="btn-secondary">Back to Dashboard</a>
+      </div>
+
+      <div class="dashboard-content">
+        <div class="dashboard-actions">
+          <button id="addSlideBtn" class="btn-primary">Add New Slide</button>
+        </div>
+
+        <div id="slideTableContainer">
+          <table id="slideTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Image</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="slideTableBody">
+              <!-- Slides will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="slideMessage" class="message"></div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Slide Modal -->
+    <div id="slideModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modalTitle">Add Slide</h2>
+        <form id="slideForm">
+          <input type="hidden" id="slideId" />
+          <div class="form-group">
+            <label for="slideTitle">Title *</label>
+            <input type="text" id="slideTitle" required />
+          </div>
+          <div class="form-group">
+            <label for="slideDescription">Description</label>
+            <textarea id="slideDescription" rows="4"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="slideImage">Image</label>
+            <input type="text" id="slideImage" placeholder="Image filename (e.g., slide-01.jpg)" />
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/header.js"></script>
+    <script src="../js/slides.js"></script>
+  </body>
+</html>
+

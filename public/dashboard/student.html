@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Management - Dashboard</title>
+    <link rel="icon" type="image/png" href="/img/logos/favicon.png" />
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header id="main-header">
+      <div class="container">
+        <div class="logo">
+          <a href="/home.html">
+            <img src="/img/logos/logo-dark.png" alt="EasyGoing Education" style="height: 40px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <span style="display: none;">EasyGoing Education</span>
+          </a>
+        </div>
+        <nav class="nav-menu">
+          <a href="/home.html">Home</a>
+          <a href="/dashboard.html" class="nav-dashboard">Dashboard</a>
+          <a href="#" class="nav-logout" style="display: none">Logout</a>
+          <a href="/index.html#register" class="nav-register" style="display: none">Register</a>
+          <a href="/index.html" class="nav-login">Login</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Student</h1>
+        <a href="/dashboard.html" class="btn-secondary">Back to Dashboard</a>
+      </div>
+
+      <div class="dashboard-content">
+        <!-- Tabs for Student Info and Student Management -->
+        <div class="tabs-container" style="margin-bottom: 2rem;">
+          <button class="tab-btn active" onclick="showTab('students')">Students</button>
+          <button class="tab-btn" onclick="showTab('studentInfo')">Student Info (Grades & Attendance)</button>
+        </div>
+
+        <!-- Students Tab -->
+        <div id="studentsTab" class="tab-content active">
+          <div class="dashboard-actions">
+            <button id="addStudentBtn" class="btn-primary">Add New Student</button>
+          </div>
+
+          <div id="studentTableContainer">
+            <table id="studentTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Name</th>
+                  <th>Surname</th>
+                  <th>Email</th>
+                  <th>Father Name</th>
+                  <th>Mother Name</th>
+                  <th>Advisor Instructor</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="studentTableBody">
+                <!-- Students will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Student Info Tab -->
+        <div id="studentInfoTab" class="tab-content" style="display: none;">
+          <div class="dashboard-actions">
+            <button id="addStudentInfoBtn" class="btn-primary">Add Student Info</button>
+          </div>
+
+          <div id="studentInfoTableContainer">
+            <table id="studentInfoTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Student</th>
+                  <th>Lesson</th>
+                  <th>Term</th>
+                  <th>Absentee</th>
+                  <th>Midterm</th>
+                  <th>Final</th>
+                  <th>Average</th>
+                  <th>Note</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="studentInfoTableBody">
+                <!-- Student Info will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="studentMessage" class="message"></div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Student Modal -->
+    <div id="studentModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modalTitle">Add Student</h2>
+        <form id="studentForm">
+          <input type="hidden" id="studentId" />
+          <div class="form-group">
+            <label for="studentUsername">Username *</label>
+            <input type="text" id="studentUsername" required />
+          </div>
+          <div class="form-group">
+            <label for="studentPassword">Password *</label>
+            <input type="password" id="studentPassword" />
+            <small>Leave empty to keep current password</small>
+          </div>
+          <div class="form-group">
+            <label for="studentName">Name *</label>
+            <input type="text" id="studentName" required />
+          </div>
+          <div class="form-group">
+            <label for="studentSurname">Surname *</label>
+            <input type="text" id="studentSurname" required />
+          </div>
+          <div class="form-group">
+            <label for="studentEmail">Email *</label>
+            <input type="email" id="studentEmail" required />
+          </div>
+          <div class="form-group">
+            <label for="studentGender">Gender</label>
+            <select id="studentGender">
+              <option value="">Select Gender</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="studentBirthDate">Birth Date</label>
+            <input type="date" id="studentBirthDate" />
+          </div>
+          <div class="form-group">
+            <label for="studentBirthPlace">Birth Place</label>
+            <input type="text" id="studentBirthPlace" />
+          </div>
+          <div class="form-group">
+            <label for="studentPhone">Phone Number</label>
+            <input type="tel" id="studentPhone" />
+          </div>
+          <div class="form-group">
+            <label for="studentSSN">SSN</label>
+            <input type="text" id="studentSSN" />
+          </div>
+          <div class="form-group">
+            <label for="studentFatherName">Father Name *</label>
+            <input type="text" id="studentFatherName" required />
+          </div>
+          <div class="form-group">
+            <label for="studentMotherName">Mother Name *</label>
+            <input type="text" id="studentMotherName" required />
+          </div>
+          <div class="form-group">
+            <label for="studentAdvisorInstructor">Advisor Instructor *</label>
+            <select id="studentAdvisorInstructor" required>
+              <option value="">Select Advisor Instructor</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add/Edit Student Info Modal -->
+    <div id="studentInfoModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close-info">&times;</span>
+        <h2 id="studentInfoModalTitle">Add Student Info</h2>
+        <form id="studentInfoForm">
+          <input type="hidden" id="studentInfoId" />
+          <div class="form-group">
+            <label for="infoStudentId">Student *</label>
+            <select id="infoStudentId" required>
+              <option value="">Select Student</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="infoLessonId">Lesson *</label>
+            <select id="infoLessonId" required>
+              <option value="">Select Lesson</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="infoTermId">Term *</label>
+            <select id="infoTermId" required>
+              <option value="">Select Term</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="infoAbsentee">Absentee</label>
+            <input type="number" id="infoAbsentee" min="0" value="0" />
+          </div>
+          <div class="form-group">
+            <label for="infoMidterm">Midterm Exam</label>
+            <input type="number" id="infoMidterm" min="0" max="100" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label for="infoFinal">Final Exam</label>
+            <input type="number" id="infoFinal" min="0" max="100" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label for="infoAverage">Average</label>
+            <input type="number" id="infoAverage" min="0" max="100" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label for="infoNote">Note</label>
+            <select id="infoNote">
+              <option value="">Select Note</option>
+              <option value="AA">AA</option>
+              <option value="BA">BA</option>
+              <option value="BB">BB</option>
+              <option value="CB">CB</option>
+              <option value="CC">CC</option>
+              <option value="DC">DC</option>
+              <option value="DD">DD</option>
+              <option value="FD">FD</option>
+              <option value="FF">FF</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="infoNoteText">Info Note</label>
+            <textarea id="infoNoteText" rows="3"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" class="btn-secondary" id="cancelInfoBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/header.js"></script>
+    <script src="../js/student.js"></script>
+  </body>
+</html>
+

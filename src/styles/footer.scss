@@ -1,0 +1,58 @@
+@use "sass:color";
+@use "variables" as *;
+@use "mixins" as *;
+
+// Footer styles (like Next.js project)
+footer {
+  background-color: $color2;
+  color: $color3;
+  padding: 70px 0 20px;
+
+  .footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: $spacing-lg;
+    margin-bottom: $spacing-lg;
+  }
+
+  .footer-section {
+    h3 {
+      color: $color3;
+      margin-bottom: $spacing-md;
+    }
+
+    ul {
+      @include reset-list;
+
+      li {
+        margin-bottom: $spacing-xs;
+
+        a {
+          color: $color1 !important;
+          @include transition(color 0.3s);
+
+          &:hover {
+            color: color.scale($color1, $lightness: 10%) !important;
+          }
+        }
+      }
+    }
+
+    p {
+      color: $color3;
+      margin-bottom: $spacing-xs;
+    }
+
+    i {
+      color: $color5;
+    }
+  }
+
+  .footer-bottom {
+    text-align: center;
+    padding-top: $spacing-md;
+    border-top: 1px solid rgba($color3, 0.2);
+    color: rgba($color3, 0.6);
+  }
+}
+

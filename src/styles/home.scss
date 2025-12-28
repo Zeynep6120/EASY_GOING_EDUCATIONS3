@@ -1,0 +1,382 @@
+@use "sass:color";
+@use "variables" as *;
+@use "mixins" as *;
+
+// Home page styles
+
+// Slider (like Next.js project)
+.main-slider {
+  img {
+    width: 100%;
+    height: calc(100vh - 110px);
+    object-fit: cover;
+    object-position: left top;
+
+    @media (min-width: 850px) {
+      object-position: right top;
+    }
+  }
+
+  .carousel-caption,
+  .slide-content {
+    bottom: 50%;
+    @include transform(translateY(50%));
+
+    h3, p {
+      color: $color2;
+    }
+
+    @media (min-width: 850px) {
+      text-align: left;
+      width: 40%;
+    }
+  }
+}
+
+.slider-section {
+  position: relative;
+  overflow: hidden;
+  height: calc(100vh - 110px);
+  min-height: 500px;
+
+  .slider-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      @include transition(opacity 1s ease-in-out);
+
+      &.active {
+        opacity: 1;
+      }
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 0;
+      }
+
+      .slide-content {
+        position: absolute;
+        bottom: 50%;
+        left: 0;
+        right: 0;
+        @include transform(translateY(50%));
+        padding: $spacing-xl $spacing-md $spacing-md;
+        z-index: 1;
+
+        h3 {
+          color: #ffffff;
+          font-size: 3.5rem;
+          font-weight: 700;
+          margin-bottom: $spacing-md;
+          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+          line-height: 1.2;
+        }
+
+        p {
+          color: #ffffff;
+          font-size: 1.3rem;
+          text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+          line-height: 1.6;
+        }
+
+        @media (min-width: 850px) {
+          text-align: left;
+          width: 50%;
+          padding-left: 4rem;
+        }
+      }
+    }
+  }
+}
+
+// Welcome Section
+.welcome-section {
+  padding: $spacing-xl 0;
+  background: $white;
+
+  .welcome-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-xl;
+    align-items: center;
+
+    .welcome-image {
+      img {
+        width: 100%;
+        @include border-radius($border-radius-lg);
+      }
+    }
+
+    .welcome-text {
+      h2 {
+        color: $color2;
+        margin-bottom: $spacing-md;
+      }
+
+      ul {
+        @include reset-list;
+        margin-top: $spacing-md;
+
+        li {
+          padding: $spacing-xs 0;
+          padding-left: $spacing-md;
+          position: relative;
+          color: $color2;
+
+          &::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: $color1;
+            font-weight: bold;
+          }
+        }
+      }
+    }
+  }
+
+  @include responsive($breakpoint-md) {
+    .welcome-content {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+// Featured Courses (like Next.js project)
+.featured-courses-section {
+  padding: $spacing-xl 0;
+  background: $color1-op-10;
+
+  .courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: $spacing-lg;
+  }
+
+  .course-card {
+    height: 100%;
+    @include card;
+    cursor: pointer;
+    @include transition(transform 0.3s, box-shadow 0.3s);
+
+    &:hover {
+      @include transform(translateY(-8px));
+      @include shadow(box, 0 8px 25px rgba(16, 68, 81, 0.2));
+      
+      .course-image img {
+        @include transform(scale(1.05));
+      }
+    }
+
+    img {
+      width: 100%;
+      height: auto;
+    }
+
+    .course-image {
+      width: 100%;
+      height: 200px;
+      overflow: hidden;
+      @include border-radius($border-radius);
+      margin-bottom: $spacing-md;
+      position: relative;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        @include transition(transform 0.5s);
+      }
+    }
+
+    .card-title,
+    .course-content h3 {
+      margin-top: 20px;
+      color: $color2;
+      margin-bottom: $spacing-xs;
+      @include transition(color 0.3s);
+    }
+
+    .card-footer,
+    .course-meta {
+      background: none;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      @include flex();
+      font-weight: 600;
+      font-size: 1.2rem;
+      color: $color2;
+      gap: $spacing-md;
+    }
+  }
+}
+
+// Events Section (like Next.js project)
+.events-section {
+  padding: $spacing-xl 0;
+  background: $white;
+
+  .events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: $spacing-xl; // Increased gap for better separation
+    padding: 0 $spacing-md; // Add padding to prevent edge cards from touching edges
+  }
+
+  .event-card {
+    height: 100%;
+    @include card;
+    cursor: pointer;
+    @include transition(transform 0.3s, box-shadow 0.3s);
+    position: relative;
+    overflow: hidden;
+
+    &:hover {
+      @include transform(translateY(-8px));
+      @include shadow(box, 0 8px 25px rgba(16, 68, 81, 0.2));
+      
+      .event-image img {
+        @include transform(scale(1.05));
+      }
+    }
+
+    img {
+      width: 100%;
+      height: auto;
+    }
+
+    .event-image {
+      width: 100%;
+      height: 200px;
+      overflow: hidden;
+      @include border-radius($border-radius);
+      margin-bottom: $spacing-md;
+      position: relative;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        @include transition(transform 0.5s);
+      }
+    }
+
+    .card-title,
+    .event-content h3 {
+      margin-top: 20px;
+      color: $color2;
+      font-size: 1.5rem;
+      text-align: center;
+      margin-bottom: $spacing-sm;
+      @include transition(color 0.3s);
+    }
+
+    .card-subtitle,
+    .event-meta {
+      padding-top: 20px;
+      padding-bottom: 20px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: $color2;
+      @include flex();
+
+      i {
+        color: $color1;
+      }
+    }
+
+    // Click indicator
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(250, 197, 76, 0);
+      @include transition(background 0.3s);
+      pointer-events: none;
+    }
+
+    &:active::after {
+      background: rgba(250, 197, 76, 0.1);
+    }
+  }
+}
+
+// Mobile App Section
+.mobile-app-section {
+  padding: $spacing-xl 0;
+  background: $color2;
+  color: $color3;
+
+  .mobile-app-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-xl;
+    align-items: center;
+
+    .mobile-app-text {
+      h2 {
+        color: $color3;
+        margin-bottom: $spacing-md;
+      }
+
+      p {
+        margin-bottom: $spacing-lg;
+        color: rgba($color3, 0.9);
+      }
+
+      .app-buttons {
+        @include flex($gap: $spacing-md);
+      }
+
+      .app-button {
+        padding: $spacing-sm $spacing-lg;
+        background: $color1;
+        color: $color2;
+        @include border-radius($border-radius);
+        font-weight: 600;
+        @include transition(transform 0.3s);
+
+        &:hover {
+          @include transform(translateY(-2px));
+        }
+      }
+    }
+
+    .mobile-app-image {
+      @include flex-center;
+
+      .phone-mockup {
+        font-size: 10rem;
+        color: $color1;
+      }
+    }
+  }
+
+  @include responsive($breakpoint-md) {
+    .mobile-app-content {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+  }
+}
+
