@@ -1,7 +1,7 @@
-const pool = require("../db/connection");
-const LessonProgram = require("../models/LessonProgram");
-const EducationTerm = require("../models/EducationTerm");
-const Lesson = require("../models/Lesson");
+const pool = require("./connection");
+const LessonProgram = require("../src/repositories/LessonProgram");
+const EducationTerm = require("../src/repositories/EducationTerm");
+const Lesson = require("../src/repositories/Lesson");
 
 async function createPrograms() {
   console.log("Attempting to create 5 sample programs...");
