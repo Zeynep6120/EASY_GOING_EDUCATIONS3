@@ -1,7 +1,7 @@
 const pool = require("../../db/connection");
 
 // Note: This model is for users with INSTRUCTOR role (formerly TEACHER)
-// The Instructor model (models/Instructor.js) is for public web content
+// The Instructor model (repositories/Instructor.js) is for public web content
 
 class InstructorUser {
   static async create(userId, isAdvisorInstructor = false, userData = null, db = pool) {

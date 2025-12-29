@@ -13,7 +13,7 @@ project-root/
 │   ├── services/         # API servisleri
 │   ├── styles/           # SCSS dosyaları
 │   ├── middleware/       # Client-side middleware
-│   └── models/           # Veritabanı modelleri
+│   └── repositories/     # Veritabanı repository katmanı
 ├── public/                # Public dosyalar
 │   ├── *.html           # HTML sayfaları
 │   ├── css/             # Derlenmiş CSS
