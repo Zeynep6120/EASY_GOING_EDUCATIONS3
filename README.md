@@ -12,13 +12,13 @@ project-root/
 │   ├── helpers/          # Yardımcı fonksiyonlar
 │   ├── services/         # API servisleri
 │   ├── styles/           # SCSS dosyaları
-│   └── middleware/       # Client-side middleware
+│   ├── middleware/       # Client-side middleware
+│   └── models/           # Veritabanı modelleri
 ├── public/                # Public dosyalar
 │   ├── *.html           # HTML sayfaları
 │   ├── css/             # Derlenmiş CSS
 │   └── img/             # Görseller
 ├── db/                   # Veritabanı dosyaları
-├── models/               # Veritabanı modelleri
 ├── routes/               # API route'ları
 └── server.js             # Express server
 ```
