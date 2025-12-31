@@ -111,6 +111,13 @@ function initHeader() {
       const confirmBtn = logoutModal.querySelector(".logout-btn-confirm");
       if (confirmBtn) {
         confirmBtn.addEventListener("click", () => {
+          // Check if user is still logged in before logging out
+          if (!isLoggedIn()) {
+            console.warn("Cannot logout: User is not logged in");
+            closeLogoutModal();
+            return;
+          }
+          
           closeLogoutModal();
           // Use window.logout to ensure it's available
           if (typeof window.logout === "function") {
@@ -118,10 +125,12 @@ function initHeader() {
           } else if (typeof logout === "function") {
             logout();
           } else {
-            // Fallback logout
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-            window.location.href = "/index.html";
+            // Fallback logout - only if logged in
+            if (isLoggedIn()) {
+              localStorage.removeItem("token");
+              localStorage.removeItem("user");
+              window.location.href = "/index.html";
+            }
           }
         });
       }
@@ -146,6 +155,13 @@ function initHeader() {
     logoutLink.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
+      
+      // Check if user is logged in before showing logout modal
+      if (!isLoggedIn()) {
+        console.warn("Cannot logout: User is not logged in");
+        return;
+      }
+      
       if (logoutModal) {
         // Remove inline style and add active class
         logoutModal.style.display = "";

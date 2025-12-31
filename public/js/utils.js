@@ -13,6 +13,12 @@ function getCurrentUser() {
 
 // Logout
 function logout() {
+  // Check if user is logged in before logging out
+  if (!isLoggedIn()) {
+    console.warn("Cannot logout: User is not logged in");
+    return;
+  }
+  
   localStorage.removeItem("token");
   localStorage.removeItem("user");
   window.location.href = "/index.html";
